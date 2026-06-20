@@ -1,14 +1,19 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import type { TreeResponse } from "../shared/types.ts";
+import { resolveConfig } from "./config.ts";
+import { discover } from "./discovery.ts";
 
 const app = new Hono();
 
 app.get("/api/tree", (c) => {
+  // Resolve config per-request so it always reflects the current FS state.
+  const config = resolveConfig();
+  const tree = discover(config);
   const response: TreeResponse = {
-    root: process.cwd(),
-    title: "Visual Planner",
-    tree: [],
+    root: config.root,
+    title: config.title,
+    tree,
   };
   return c.json(response);
 });
