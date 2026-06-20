@@ -53,6 +53,8 @@ mock.module("@mantine/core", () => ({
     <code {...(props as object)}>{children}</code>
   ),
   TextInput: (props: { [k: string]: unknown }) => <input {...(props as object)} />,
+  AppShell: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  Skeleton: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 import { HtmlView } from "../../src/client/render/HtmlView.tsx";
