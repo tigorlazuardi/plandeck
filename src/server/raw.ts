@@ -35,12 +35,14 @@ export function confinedResolve(
   root: string,
   rawRelpath: string,
 ): { resolved: string } | { error: 403 | 404 } {
-  // Step 1: decode percent-encoding
+  // Step 1: decode percent-encoding.
+  // Single decodeURIComponent is intentional — a decode loop would re-open
+  // double-encoded traversal attacks (e.g. %252e%252e → %2e%2e → ..).
   let decoded: string;
   try {
     decoded = decodeURIComponent(rawRelpath);
   } catch {
-    return { error: 400 as 403 };
+    return { error: 403 };
   }
 
   // Step 2: reject absolute paths (starts with /)
@@ -76,6 +78,26 @@ export function confinedResolve(
 
   if (!stat.isFile()) {
     return { error: 404 };
+  }
+
+  // Step 7: realpath re-confinement — closes the intermediate dir-symlink bypass.
+  // lstatSync on the LEAF is not enough: if any INTERMEDIATE directory segment is
+  // itself a symlink to an outside dir, the OS follows it during path resolution
+  // and the leaf lstat sees a regular file. realpathSync resolves all symlinks in
+  // every segment, so we can compare real absolute paths and reject anything that
+  // escapes root even through an intermediate dir symlink.
+  let realRoot: string;
+  let realTarget: string;
+  try {
+    realRoot = fs.realpathSync(root);
+    realTarget = fs.realpathSync(resolved);
+  } catch {
+    // realpathSync throws ENOENT when the path doesn't exist (e.g. raced deletion).
+    return { error: 404 };
+  }
+
+  if (realTarget !== realRoot && !realTarget.startsWith(realRoot + path.sep)) {
+    return { error: 403 };
   }
 
   return { resolved };

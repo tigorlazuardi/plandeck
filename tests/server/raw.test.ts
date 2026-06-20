@@ -90,6 +90,33 @@ describe("confinedResolve", () => {
     expect("error" in result).toBe(true);
     expect((result as { error: number }).error).toBe(404);
   });
+
+  it("rejects intermediate dir symlink pointing outside root (dir-symlink bypass)", async () => {
+    const { confinedResolve } = await import("../../src/server/raw.ts");
+    // Create a dir OUTSIDE root with a secret file
+    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "vp-outside-"));
+    const secretContent = "SECRET_CONTENT_SHOULD_NOT_LEAK";
+    fs.writeFileSync(path.join(outsideDir, "secret.txt"), secretContent);
+    // Create a dir symlink INSIDE root pointing at the outside dir
+    const linkPath = path.join(tmpRoot, "link");
+    try {
+      fs.symlinkSync(outsideDir, linkPath, "dir");
+    } catch {
+      // If symlink creation fails (e.g. no permission), skip but do not silently pass
+      fs.rmSync(outsideDir, { recursive: true, force: true });
+      console.warn("Skipping dir-symlink test: symlink creation failed");
+      return;
+    }
+    try {
+      // `link/secret.txt` lexically resolves inside root but escapes via the dir symlink
+      const result = confinedResolve(tmpRoot, "link/secret.txt");
+      // Must be REJECTED — not a resolved path
+      expect("error" in result).toBe(true);
+    } finally {
+      fs.unlinkSync(linkPath);
+      fs.rmSync(outsideDir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ── HTTP endpoint tests ───────────────────────────────────────────────────────
