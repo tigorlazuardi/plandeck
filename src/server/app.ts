@@ -5,6 +5,7 @@ import type { SearchResponse, TreeResponse } from "../shared/types.ts";
 import { resolveConfig } from "./config.ts";
 import { discover } from "./discovery.ts";
 import { toProse } from "./prose.ts";
+import { rawHandler } from "./raw.ts";
 import { build } from "./search-index.ts";
 import type { SearchIndex } from "./search-index.ts";
 
@@ -80,6 +81,9 @@ app.get("/api/tree", (c) => {
   };
   return c.json(response);
 });
+
+// Raw file endpoint — must be BEFORE static middleware to avoid shadowing
+app.get("/api/raw/:relpath{.*}", rawHandler);
 
 // Serve static dist/ in production
 app.use(
