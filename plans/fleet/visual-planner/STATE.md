@@ -9,36 +9,39 @@ repoPath: /home/homeserver/projects/visual-planner
 visualPlanUrl:
 
 ## Slices
-- 0.1 [done]    scaffold + harness @ e2c3bac (on main)
-- 1.1 [done]    discovery/ignore/config @ ec0ef5c (opus; 64 server tests; security verified)
-- 1.2 [done]    client shell + tree + markdown @ de1b34a (sonnet) + test-cleanup fix @ c3639f7
-- 2.1 [pending] deps: 1.2   orch: sonnet (MDX blocks)
-- 2.2 [pending] deps: 1.1,1.2 orch: sonnet (FTS5 search)
-- 2.4 [pending] deps: 1.1,1.2 orch: opus  (non-text viewers + raw + sandbox — security)
-- 2.3 [pending] deps: 2.1   orch: sonnet (highlight + mermaid)  <- AFTER 2.1
+- 0.1 [done] scaffold + harness @ e2c3bac (main)
+- 1.1 [done] discovery/ignore/config @ ec0ef5c (opus)
+- 1.2 [done] client shell + tree + markdown @ de1b34a (+ cleanup fix c3639f7)
+- 2.1 [done] MDX render + 4 blocks @ 04ba957
+- 2.2 [done] FTS5 search + prose-strip + SearchBox @ merge 4feb745
+- 2.4 [done] non-text viewers + confined raw endpoint @ merge 665e76d (opus)
+- SEC [done] XSS hardening (raw active-types + snippet) @ 5d923b9, +follow-up 6e307b2 (opus-reviewed GO)
+- 2.3 [pending] deps: 2.1   orch: sonnet (highlight + mermaid)  <- DISPATCHING (wave 2b)
 - 3.1 [pending] deps: 1.1   orch: sonnet (CLI + lifecycle)
 - 3.2 [pending] deps: 2.2   orch: sonnet (live reload watcher/SSE)
 - 3.3 [pending] deps: all   orch: sonnet (error states + E2E)
 
-## Revised waves (2.3 depends on 2.1 -> own sub-wave)
-- wave2a: [2.1, 2.2, 2.4]   <- DISPATCHING
-- wave2b: [2.3]
+## Waves
+- wave2a [done]: 2.1, 2.2, 2.4 (+ security hardening)
+- wave2b: [2.3]   <- now
 - wave3a: [3.1, 3.2]
 - wave3b: [3.3]
 
 ## Integration health
-- bun test: 70 pass / 0 fail. bun run check: clean. (verified by captain @ c3639f7)
+- bun run check: CLEAN. bun test: 167 pass / 0 fail. (captain-verified @ 6e307b2)
+- Two HIGH XSS findings (raw active-types, FTS5 snippet) fixed + opus-confirmed not bypassable.
 
 ## Knowledge persisted
-- .claude/rules/playwright-podman-e2e.md
-- .claude/rules/server-config-and-discovery.md (opus 1.1, written:true)
-- .claude/rules/client-conventions.md (captain, from sonnet 1.2 deltas)
+- playwright-podman-e2e.md, server-config-and-discovery.md, client-conventions.md
+- raw-endpoint-and-sandbox.md (opus 2.4)
+- typescript-strict-gotchas.md, mdx-rendering.md, search-xss-invariant.md (captain, from 2.1/2.2 deltas + opus review)
 
 ## Learnings
-- Branch slices off CURRENT integration HEAD (not a fixed SHA) — 1.1 hit a stale base.
-- Shared file watch: src/client/render/DocView.tsx edited by 2.1 (mdx) + 2.4 (html/pdf/img)
-  — keep edits additive (own kind cases only) to ease union merge.
+- Branch slices off CURRENT integration HEAD (not fixed SHA).
+- Shared-file drift (DocView.tsx, app.ts, package.json) → import-only union conflicts; resolve by union, dedupe package.json keys, `bunx biome check --write` for import order, `bun install` to regen lock.
+- A slice branching before an integration rule-doc lands sees it as a deletion — restore before merge.
+- Background security review (security-guidance plugin) fires on commits — caught both XSS findings. Treat its findings as gating on the security surface.
 
 ## Notes
-- No git remote — local commits only, no push.
-- Frozen shared contract: src/shared/types.ts + HTTP API.
+- No git remote — local commits only.
+- Frozen contract: src/shared/types.ts + HTTP API.
