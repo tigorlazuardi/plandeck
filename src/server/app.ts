@@ -3,6 +3,7 @@ import { serveStatic } from "hono/bun";
 import type { TreeResponse } from "../shared/types.ts";
 import { resolveConfig } from "./config.ts";
 import { discover } from "./discovery.ts";
+import { rawHandler } from "./raw.ts";
 
 const app = new Hono();
 
@@ -17,6 +18,9 @@ app.get("/api/tree", (c) => {
   };
   return c.json(response);
 });
+
+// Raw file endpoint — must be BEFORE static middleware to avoid shadowing
+app.get("/api/raw/:relpath{.*}", rawHandler);
 
 // Serve static dist/ in production
 app.use(

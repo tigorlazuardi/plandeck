@@ -1,6 +1,9 @@
 import { Skeleton, Text } from "@mantine/core";
 import { useDoc } from "../api.ts";
+import { HtmlView } from "./HtmlView.tsx";
+import { ImageView } from "./ImageView.tsx";
 import { Markdown } from "./Markdown.tsx";
+import { PdfView } from "./PdfView.tsx";
 import { PlainText } from "./PlainText.tsx";
 
 interface DocViewProps {
@@ -44,6 +47,18 @@ export function DocView({ path }: DocViewProps) {
 
   if (kind === "txt") {
     return <PlainText content={content ?? ""} />;
+  }
+
+  if (kind === "html") {
+    return <HtmlView html={content ?? ""} />;
+  }
+
+  if (kind === "pdf") {
+    return <PdfView path={path} />;
+  }
+
+  if (kind === "image") {
+    return <ImageView path={path} />;
   }
 
   return (
