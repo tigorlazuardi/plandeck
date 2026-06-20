@@ -1,3 +1,4 @@
+import { useMantineColorScheme } from "@mantine/core";
 import { evaluate } from "@mdx-js/mdx";
 import { MDXProvider, useMDXComponents } from "@mdx-js/react";
 import type React from "react";
@@ -5,6 +6,8 @@ import { Component, useEffect, useState } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { components } from "../blocks/index.ts";
+import { Mermaid } from "./Mermaid.tsx";
+import { getRehypeShikiPlugin } from "./highlight.ts";
 
 interface ParseErrorCardProps {
   error: Error;
@@ -74,25 +77,39 @@ interface MdxProps {
 }
 
 export function Mdx({ content, path }: MdxProps) {
+  const { colorScheme } = useMantineColorScheme();
   const [MdxComponent, setMdxComponent] = useState<React.ComponentType | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     setMdxComponent(null);
     setError(null);
 
-    evaluate(content, {
-      remarkPlugins: [remarkGfm],
-      ...(runtime as Parameters<typeof evaluate>[1]),
-      useMDXComponents,
-    })
-      .then(({ default: C }: { default: React.ComponentType }) => {
+    getRehypeShikiPlugin(colorScheme)
+      .then((shikiPlugin) => {
+        if (cancelled) return;
+        return evaluate(content, {
+          remarkPlugins: [remarkGfm],
+          rehypePlugins: [shikiPlugin],
+          ...(runtime as Parameters<typeof evaluate>[1]),
+          useMDXComponents,
+        });
+      })
+      .then((mod) => {
+        if (cancelled || !mod) return;
+        const C = mod.default;
         setMdxComponent(() => C);
       })
       .catch((err: unknown) => {
+        if (cancelled) return;
         setError(err instanceof Error ? err : new Error(String(err)));
       });
-  }, [content]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content, colorScheme]);
 
   const pathProp = path !== undefined ? { path } : {};
 
@@ -104,9 +121,33 @@ export function Mdx({ content, path }: MdxProps) {
     return <div data-testid="mdx-loading">Loading…</div>;
   }
 
+  const mdxComponents = {
+    ...components,
+    pre(props: React.ComponentPropsWithoutRef<"pre">) {
+      const { children } = props;
+      if (
+        children &&
+        typeof children === "object" &&
+        "props" in children &&
+        children.props &&
+        typeof children.props === "object" &&
+        "className" in children.props &&
+        typeof children.props.className === "string" &&
+        children.props.className.includes("language-mermaid")
+      ) {
+        const code =
+          "children" in children.props && typeof children.props.children === "string"
+            ? children.props.children
+            : "";
+        return <Mermaid code={code} />;
+      }
+      return <pre {...props} />;
+    },
+  };
+
   return (
     <MdxErrorBoundary {...pathProp}>
-      <MDXProvider components={components}>
+      <MDXProvider components={mdxComponents}>
         <MdxComponent />
       </MDXProvider>
     </MdxErrorBoundary>
