@@ -29,7 +29,7 @@ describe("toProse - md", () => {
     const text = "---\ntitle: Foo\ndate: 2024-01-01\n---\n\nBody content here.";
     const result = await toProse(text, "md");
     expect(result).not.toContain("title:");
-    expect(result).not.toContain("Foo".slice(0, 3) + "---");
+    expect(result).not.toContain(`${"Foo".slice(0, 3)}---`);
     expect(result).not.toMatch(/^---/);
     expect(result).toContain("Body content here");
   });

@@ -1,23 +1,36 @@
-import { describe, expect, it, mock, beforeEach, afterEach, jest } from "bun:test";
-import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SearchBox } from "../../src/client/shell/SearchBox.tsx";
 
 // Mock react-router-dom navigate
 const mockNavigate = mock(() => {});
 mock.module("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
   useNavigate: () => mockNavigate,
   MemoryRouter: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 const mockHits = [
-  { path: "docs/intro.md", title: "Introduction", snippet: "This is an <mark>intro</mark> page.", rank: -1.5 },
-  { path: "docs/guide.md", title: "Guide", snippet: "A helpful <mark>intro</mark> guide.", rank: -0.8 },
+  {
+    path: "docs/intro.md",
+    title: "Introduction",
+    snippet: "This is an <mark>intro</mark> page.",
+    rank: -1.5,
+  },
+  {
+    path: "docs/guide.md",
+    title: "Guide",
+    snippet: "A helpful <mark>intro</mark> guide.",
+    rank: -0.8,
+  },
 ];
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MemoryRouter>{children}</MemoryRouter>;
+}
+
+function setFetch(fn: () => Promise<Partial<Response>>) {
+  globalThis.fetch = fn as unknown as typeof globalThis.fetch;
 }
 
 beforeEach(() => {
@@ -26,11 +39,11 @@ beforeEach(() => {
 
 describe("SearchBox", () => {
   it("renders an input element", async () => {
-    globalThis.fetch = mock(() =>
+    setFetch(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ hits: [] }),
-      } as Response)
+      }),
     );
 
     await act(async () => {
@@ -49,9 +62,9 @@ describe("SearchBox", () => {
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ hits: mockHits }),
-      } as Response)
+      }),
     );
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
     await act(async () => {
       render(
@@ -75,11 +88,11 @@ describe("SearchBox", () => {
   });
 
   it("shows returned hit titles and snippets", async () => {
-    globalThis.fetch = mock(() =>
+    setFetch(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ hits: mockHits }),
-      } as Response)
+      }),
     );
 
     await act(async () => {
@@ -105,11 +118,11 @@ describe("SearchBox", () => {
   });
 
   it("clicking a hit navigates to /doc/<path>", async () => {
-    globalThis.fetch = mock(() =>
+    setFetch(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ hits: mockHits }),
-      } as Response)
+      }),
     );
 
     await act(async () => {
@@ -132,18 +145,18 @@ describe("SearchBox", () => {
 
     const hitTitle = screen.getByText("Introduction");
     await act(async () => {
-      fireEvent.click(hitTitle.closest("[data-hit]") || hitTitle);
+      fireEvent.click(hitTitle.closest("[data-hit]") ?? hitTitle);
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/doc/docs/intro.md");
   });
 
   it("shows 'No results' when hits array is empty and q non-empty", async () => {
-    globalThis.fetch = mock(() =>
+    setFetch(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ hits: [] }),
-      } as Response)
+      }),
     );
 
     await act(async () => {

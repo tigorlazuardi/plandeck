@@ -2,6 +2,7 @@ import { ActionIcon, AppShell, Group, Title, useMantineColorScheme } from "@mant
 import { Moon, Sun } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { useTree } from "../api.ts";
+import { SearchBox } from "./SearchBox.tsx";
 
 const COLOR_SCHEME_KEY = "vp-color-scheme";
 
@@ -46,6 +47,7 @@ export function AppLayout({ sidebar, main }: AppLayoutProps) {
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Title order={4}>{title}</Title>
+          <SearchBox />
           <ThemeToggle />
         </Group>
       </AppShell.Header>
