@@ -7,6 +7,7 @@ import type { DocResponse, SearchResponse, TreeResponse } from "../shared/types.
 import type { ResolvedConfig } from "../shared/types.ts";
 import { resolveConfig } from "./config.ts";
 import { discover } from "./discovery.ts";
+import { EMBEDDED, HAS_EMBEDDED } from "./embedded-assets.ts";
 import { kindFor } from "./kind.ts";
 import { toProse } from "./prose.ts";
 import { confinedResolve, makeRawHandler } from "./raw.ts";
@@ -217,32 +218,97 @@ export function createApp(config: ResolvedConfig): Hono {
   // Raw file endpoint — must be BEFORE static middleware to avoid shadowing
   app.get("/api/raw/:relpath{.*}", makeRawHandler(config));
 
-  // Serve static dist/ in production
-  app.use(
-    "/*",
-    serveStatic({
-      root: "./dist",
-    }),
-  );
-
-  // SPA fallback: non-/api routes that didn't match a static file get index.html
-  app.get("/*", async (c) => {
-    const path = c.req.path;
-    if (path.startsWith("/api/")) {
-      return c.json({ error: "Not found" }, 404);
-    }
-    const file = Bun.file("./dist/index.html");
-    if (await file.exists()) {
-      return new Response(file, {
-        headers: { "content-type": "text/html; charset=utf-8" },
+  if (HAS_EMBEDDED) {
+    // Compiled binary: SPA is baked into the executable (see embedded-assets.ts).
+    // serveStatic({root:"./dist"}) cannot read a cwd-relative dist that does not
+    // exist next to a binary launched from the user's plan directory.
+    app.get("/*", (c) => {
+      const reqPath = c.req.path;
+      if (reqPath.startsWith("/api/")) {
+        return c.json({ error: "Not found" }, 404);
+      }
+      let key = reqPath === "/" ? "/index.html" : reqPath;
+      let filePath = EMBEDDED[key];
+      if (filePath === undefined) {
+        // SPA fallback: client-side routes resolve to index.html.
+        key = "/index.html";
+        filePath = EMBEDDED[key];
+      }
+      if (filePath === undefined) {
+        return c.notFound();
+      }
+      return new Response(Bun.file(filePath), {
+        headers: { "content-type": mimeFor(key) },
       });
-    }
-    return c.html(
-      '<!doctype html><html><head><meta charset="UTF-8"/></head><body><div id="root"></div></body></html>',
+    });
+  } else {
+    // Dev / `bun run start`: serve the on-disk dist/ build.
+    app.use(
+      "/*",
+      serveStatic({
+        root: "./dist",
+      }),
     );
-  });
+
+    // SPA fallback: non-/api routes that didn't match a static file get index.html
+    app.get("/*", async (c) => {
+      const reqPath = c.req.path;
+      if (reqPath.startsWith("/api/")) {
+        return c.json({ error: "Not found" }, 404);
+      }
+      const file = Bun.file("./dist/index.html");
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      return c.html(
+        '<!doctype html><html><head><meta charset="UTF-8"/></head><body><div id="root"></div></body></html>',
+      );
+    });
+  }
 
   return app;
+}
+
+// Content-type for embedded SPA assets, keyed by file extension.
+function mimeFor(p: string): string {
+  const dot = p.lastIndexOf(".");
+  const ext = dot >= 0 ? p.slice(dot + 1).toLowerCase() : "";
+  switch (ext) {
+    case "html":
+      return "text/html; charset=utf-8";
+    case "js":
+      return "text/javascript; charset=utf-8";
+    case "css":
+      return "text/css; charset=utf-8";
+    case "json":
+    case "map":
+      return "application/json; charset=utf-8";
+    case "svg":
+      return "image/svg+xml; charset=utf-8";
+    case "txt":
+      return "text/plain; charset=utf-8";
+    case "webmanifest":
+      return "application/manifest+json; charset=utf-8";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "ico":
+      return "image/x-icon";
+    case "woff2":
+      return "font/woff2";
+    case "woff":
+      return "font/woff";
+    default:
+      return "application/octet-stream";
+  }
 }
 
 // Back-compat default export: resolves config the same way as before (defaults < ENV < .plandeck.json)
