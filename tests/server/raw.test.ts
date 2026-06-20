@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { sanitizeFilename } from "../../src/server/raw.ts";
 
 let tmpRoot: string;
 
@@ -253,5 +254,96 @@ describe("GET /api/raw/*", () => {
     expect(res.status).toBe(200);
     const csp = res.headers.get("content-security-policy") ?? "";
     expect(csp).toContain("sandbox");
+  });
+
+  it("404 response includes nosniff and CSP", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/doesnotexist.bin");
+    expect(res.status).toBe(404);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    const csp = res.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("sandbox");
+  });
+
+  it("403 response includes nosniff and CSP", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/%2e%2e%2fetc%2fpasswd");
+    expect(res.status === 403 || res.status === 404).toBe(true);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    const csp = res.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("sandbox");
+  });
+
+  it("file with quote in name → Content-Disposition is well-formed and has filename*=", async () => {
+    // On Linux most filesystems allow `"` in filenames. Try to create one; skip if not.
+    const quotedName = 'weird"file.bin';
+    const quotedPath = path.join(tmpRoot, quotedName);
+    let created = false;
+    try {
+      fs.writeFileSync(quotedPath, "data");
+      created = true;
+    } catch {
+      console.warn('Skipping quote-filename test: cannot create file with `"` in name');
+      return;
+    }
+    try {
+      const app = await getApp();
+      const res = await app.request(`/api/raw/${encodeURIComponent(quotedName)}`);
+      expect(res.status).toBe(200);
+      const cd = res.headers.get("content-disposition") ?? "";
+      // Must not contain a raw double-quote inside the filename="..." value
+      // (would break the header). The filename= token must be well-formed.
+      expect(cd).toContain("attachment");
+      expect(cd).toContain('filename="');
+      expect(cd).not.toMatch(/filename="[^"]*"[^"]*"/); // no stray quote inside value
+      // RFC 5987 extended form must also be present
+      expect(cd).toContain("filename*=UTF-8''");
+    } finally {
+      if (created) fs.unlinkSync(quotedPath);
+    }
+  });
+});
+
+// ── sanitizeFilename unit tests ───────────────────────────────────────────────
+describe("sanitizeFilename", () => {
+  it("leaves a normal filename unchanged in safeName", () => {
+    const { safeName, encoded } = sanitizeFilename("hello.txt");
+    expect(safeName).toBe("hello.txt");
+    expect(encoded).toBe("hello.txt");
+  });
+
+  it("replaces double-quote with underscore in safeName", () => {
+    const { safeName } = sanitizeFilename('file"name.txt');
+    expect(safeName).not.toContain('"');
+    expect(safeName).toBe("file_name.txt");
+  });
+
+  it("replaces CR and LF with underscore in safeName", () => {
+    const { safeName } = sanitizeFilename("file\r\nname.txt");
+    expect(safeName).not.toContain("\r");
+    expect(safeName).not.toContain("\n");
+    expect(safeName).toBe("file__name.txt");
+  });
+
+  it("replaces other control chars (\\x01–\\x1f) in safeName", () => {
+    const { safeName } = sanitizeFilename("file\x01\x1fname.txt");
+    expect(safeName).toBe("file__name.txt");
+  });
+
+  it("percent-encodes special chars in encoded form", () => {
+    const { encoded } = sanitizeFilename('file"na me.txt');
+    expect(encoded).toContain("%22"); // " → %22
+    expect(encoded).toContain("%20"); // space → %20
+  });
+
+  it("produces well-formed Content-Disposition from a hostile filename", () => {
+    const { safeName, encoded } = sanitizeFilename('at"tack\r\nfile.bin');
+    const header = `attachment; filename="${safeName}"; filename*=UTF-8''${encoded}`;
+    // Header must not contain bare CR or LF (would split the header)
+    expect(header).not.toContain("\r");
+    expect(header).not.toContain("\n");
+    // filename= value must be closed properly — no unescaped quote inside
+    const filenameMatch = header.match(/filename="([^"]*)"/);
+    expect(filenameMatch).not.toBeNull();
   });
 });
