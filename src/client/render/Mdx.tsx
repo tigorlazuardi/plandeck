@@ -86,8 +86,8 @@ export function Mdx({ content, path }: MdxProps) {
       ...(runtime as Parameters<typeof evaluate>[1]),
       useMDXComponents,
     })
-      .then(({ default: C }) => {
-        setMdxComponent(() => C as React.ComponentType);
+      .then(({ default: C }: { default: React.ComponentType }) => {
+        setMdxComponent(() => C);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err : new Error(String(err)));
