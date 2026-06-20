@@ -9,7 +9,7 @@ describe("GET /api/tree", () => {
     expect(body).toBeObject();
     const obj = body as Record<string, unknown>;
     expect(typeof obj.root).toBe("string");
-    expect(obj.title).toBe("Visual Planner");
+    expect(typeof obj.title).toBe("string"); // dynamic: basename of root
     expect(Array.isArray(obj.tree)).toBe(true);
   });
 });
