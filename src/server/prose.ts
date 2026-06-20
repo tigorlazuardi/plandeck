@@ -4,12 +4,20 @@ import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 
-// Remove raw HTML nodes from mdast to prevent XSS via snippet
+// Node types that can contain executable content and must be stripped from prose.
+// - "html": raw HTML blocks/inline in standard markdown (e.g. <script>…</script>)
+// - "mdxJsxFlowElement" / "mdxJsxTextElement": JSX elements in MDX, which remark-mdx
+//   parses from tags like <script>, <img onerror=…>, etc. Their text children would
+//   otherwise survive mdast-util-to-string and land in the search index.
+const STRIP_NODE_TYPES = new Set(["html", "mdxJsxFlowElement", "mdxJsxTextElement"]);
+
+// Remove executable-content nodes from mdast to prevent XSS via FTS5 snippet.
+// Strips the node AND all its children so inner text values don't leak into prose.
 function stripHtmlNodes(node: { type: string; children?: unknown[] }): void {
   if (node.children) {
     node.children = node.children.filter((c: unknown) => {
       const child = c as { type: string; children?: unknown[] };
-      if (child.type === "html") return false;
+      if (STRIP_NODE_TYPES.has(child.type)) return false;
       stripHtmlNodes(child);
       return true;
     });

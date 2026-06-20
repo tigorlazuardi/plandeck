@@ -50,6 +50,34 @@ describe("toProse - md", () => {
   });
 });
 
+describe("toProse - html node stripping (XSS prevention)", () => {
+  it("strips raw <script> HTML nodes from md prose", async () => {
+    const text = "Some text\n\n<script>alert(1)</script>\n\nMore content.";
+    const result = await toProse(text, "md");
+    expect(result).not.toContain("<script");
+    expect(result).not.toContain("alert(1)");
+    expect(result).toContain("Some text");
+    expect(result).toContain("More content");
+  });
+
+  it("strips <img onerror> HTML nodes from md prose", async () => {
+    const text = "Before\n\n<img src=x onerror=alert(1)>\n\nAfter.";
+    const result = await toProse(text, "md");
+    expect(result).not.toContain("<img");
+    expect(result).not.toContain("onerror");
+    expect(result).toContain("Before");
+    expect(result).toContain("After");
+  });
+
+  it("strips raw HTML nodes from mdx prose", async () => {
+    const text = "# Title\n\n<script>alert(1)</script>\n\nBody.";
+    const result = await toProse(text, "mdx");
+    expect(result).not.toContain("<script");
+    expect(result).not.toContain("alert(1)");
+    expect(result).toContain("Body");
+  });
+});
+
 describe("toProse - mdx", () => {
   it("strips JSX tags like <Callout>...</Callout>", async () => {
     const text = "# Title\n\n<Callout>This is a callout</Callout>\n\nSome prose.";

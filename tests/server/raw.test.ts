@@ -13,6 +13,11 @@ beforeAll(() => {
   fs.writeFileSync(path.join(tmpRoot, "sample.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   fs.writeFileSync(path.join(tmpRoot, "sample.jpg"), Buffer.from([0xff, 0xd8, 0xff]));
   fs.writeFileSync(path.join(tmpRoot, "hello.txt"), "hello world");
+  fs.writeFileSync(path.join(tmpRoot, "page.html"), "<html><body>hello</body></html>");
+  fs.writeFileSync(
+    path.join(tmpRoot, "image.svg"),
+    '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+  );
 
   // Set VP_ROOT before importing app
   process.env.VP_ROOT = tmpRoot;
@@ -177,5 +182,76 @@ describe("GET /api/raw/*", () => {
     fs.mkdirSync(path.join(tmpRoot, "testdir"), { recursive: true });
     const res = await app.request("/api/raw/testdir");
     expect(res.status === 403 || res.status === 404).toBe(true);
+  });
+
+  // XSS mitigation: active-content types must be forced to download
+  it("html file → content-type octet-stream (not text/html)", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/page.html");
+    expect(res.status).toBe(200);
+    const ct = res.headers.get("content-type") ?? "";
+    expect(ct).toContain("application/octet-stream");
+    expect(ct).not.toContain("text/html");
+  });
+
+  it("html file → has Content-Disposition: attachment", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/page.html");
+    expect(res.status).toBe(200);
+    const cd = res.headers.get("content-disposition") ?? "";
+    expect(cd).toContain("attachment");
+  });
+
+  it("html file → has X-Content-Type-Options: nosniff", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/page.html");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("svg file → content-type octet-stream (not image/svg+xml)", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/image.svg");
+    expect(res.status).toBe(200);
+    const ct = res.headers.get("content-type") ?? "";
+    expect(ct).toContain("application/octet-stream");
+    expect(ct).not.toContain("image/svg+xml");
+  });
+
+  it("svg file → has Content-Disposition: attachment", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/image.svg");
+    expect(res.status).toBe(200);
+    const cd = res.headers.get("content-disposition") ?? "";
+    expect(cd).toContain("attachment");
+  });
+
+  it("pdf → has X-Content-Type-Options: nosniff", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/sample.pdf");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("png → has X-Content-Type-Options: nosniff", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/sample.png");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  it("pdf → no Content-Disposition (served inline)", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/sample.pdf");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-disposition")).toBeNull();
+  });
+
+  it("every raw response has Content-Security-Policy: sandbox", async () => {
+    const app = await getApp();
+    const res = await app.request("/api/raw/sample.pdf");
+    expect(res.status).toBe(200);
+    const csp = res.headers.get("content-security-policy") ?? "";
+    expect(csp).toContain("sandbox");
   });
 });

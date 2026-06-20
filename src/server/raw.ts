@@ -3,22 +3,30 @@ import * as path from "node:path";
 import type { Context } from "hono";
 import { resolveConfig } from "./config.ts";
 
-// Extension → MIME type map for raw file serving
-const MIME_MAP: Record<string, string> = {
+// Safe inline allowlist: ONLY these extensions are served inline with their type.
+// All other extensions (including .html, .htm, .svg, .xml, .txt, etc.) are forced
+// to download as application/octet-stream to prevent same-origin XSS.
+const INLINE_MIME_MAP: Record<string, string> = {
   ".pdf": "application/pdf",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
-  ".html": "text/html; charset=utf-8",
-  ".htm": "text/html; charset=utf-8",
   ".gif": "image/gif",
   ".webp": "image/webp",
-  ".svg": "image/svg+xml",
 };
 
-function mimeFor(filePath: string): string {
+/**
+ * Returns { mime, inline } for the given file path.
+ * inline=true → serve with the given mime type (safe raster/PDF).
+ * inline=false → force download as application/octet-stream.
+ */
+function mimeFor(filePath: string): { mime: string; inline: boolean } {
   const ext = filePath.slice(filePath.lastIndexOf(".")).toLowerCase();
-  return MIME_MAP[ext] ?? "application/octet-stream";
+  const mime = INLINE_MIME_MAP[ext];
+  if (mime) {
+    return { mime, inline: true };
+  }
+  return { mime: "application/octet-stream", inline: false };
 }
 
 /**
@@ -120,11 +128,25 @@ export async function rawHandler(c: Context): Promise<Response> {
   }
 
   const { resolved } = result;
-  const mime = mimeFor(resolved);
+  const { mime, inline } = mimeFor(resolved);
+
+  // Security headers required on every raw response:
+  // - nosniff: prevents browsers from MIME-sniffing away from the declared type.
+  // - CSP sandbox: locks down any browser rendering context (belt + suspenders).
+  const headers: Record<string, string> = {
+    "content-type": mime,
+    "x-content-type-options": "nosniff",
+    "content-security-policy": "sandbox; default-src 'none'",
+  };
+
+  if (!inline) {
+    // Force download for any type not in the safe inline allowlist.
+    // basename is already validated as an in-root path, so it is safe to use.
+    const basename = resolved.slice(resolved.lastIndexOf("/") + 1);
+    headers["content-disposition"] = `attachment; filename="${basename}"`;
+  }
 
   // Stream bytes
   const file = Bun.file(resolved);
-  return new Response(file, {
-    headers: { "content-type": mime },
-  });
+  return new Response(file, { headers });
 }
