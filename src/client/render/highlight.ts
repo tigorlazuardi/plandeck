@@ -28,7 +28,8 @@ export async function getHighlighter(): Promise<Highlighter> {
 
 export function rehypeShikiOptions(colorScheme: "light" | "dark" | "auto") {
   const theme = colorScheme === "dark" ? "github-dark" : "github-light";
-  return { theme } as const;
+  // onError: silently leave unknown/unloaded languages (e.g. mermaid) as plain pre/code
+  return { theme, onError: () => {} } as const;
 }
 
 export function getMermaidLangs(): string[] {

@@ -1,15 +1,18 @@
-import { TypographyStylesProvider } from "@mantine/core";
+import { TypographyStylesProvider, useMantineColorScheme } from "@mantine/core";
+import { useEffect, useState } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { PluggableList } from "unified";
 import { Mermaid } from "./Mermaid.tsx";
+import { getRehypeShikiPlugin } from "./highlight.ts";
 
 interface MarkdownProps {
   content: string;
 }
 
 const components: Components = {
-  pre({ children }) {
+  pre({ children, ...rest }) {
     // Check if child is a code element with language-mermaid class
     if (
       children &&
@@ -27,14 +30,38 @@ const components: Components = {
           : "";
       return <Mermaid code={code} />;
     }
-    return <pre>{children}</pre>;
+    // Pass through all props (including className from shiki) to the pre element
+    return <pre {...rest}>{children}</pre>;
   },
 };
 
 export function Markdown({ content }: MarkdownProps) {
+  const { colorScheme } = useMantineColorScheme();
+  const [rehypePlugins, setRehypePlugins] = useState<PluggableList>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRehypeShikiPlugin(colorScheme)
+      .then((plugin) => {
+        if (!cancelled) {
+          setRehypePlugins([plugin]);
+        }
+      })
+      .catch(() => {
+        // if shiki fails to load, fall back to no highlighting
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [colorScheme]);
+
   return (
     <TypographyStylesProvider>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={rehypePlugins}
+        components={components}
+      >
         {content}
       </ReactMarkdown>
     </TypographyStylesProvider>

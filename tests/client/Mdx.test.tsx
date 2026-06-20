@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { MantineProvider } from "@mantine/core";
 import { act, render, screen, waitFor } from "@testing-library/react";
-import React from "react";
+import type React from "react";
 import { Mdx } from "../../src/client/render/Mdx.tsx";
 
 const validMdx = `
@@ -21,14 +22,26 @@ const validMdx = `
 </HtmlBlock>
 `;
 
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return <MantineProvider>{children}</MantineProvider>;
+}
+
 describe("Mdx", () => {
   test("shows loading state initially", () => {
-    render(<Mdx content="# Hello" />);
+    render(
+      <Wrapper>
+        <Mdx content="# Hello" />
+      </Wrapper>,
+    );
     expect(screen.getByTestId("mdx-loading")).toBeTruthy();
   });
 
   test("renders compiled MDX content", async () => {
-    render(<Mdx content={"# Hello MDX\n\nSome paragraph."} />);
+    render(
+      <Wrapper>
+        <Mdx content={"# Hello MDX\n\nSome paragraph."} />
+      </Wrapper>,
+    );
     await waitFor(() => {
       expect(screen.queryByTestId("mdx-loading")).toBeNull();
     });
@@ -45,7 +58,11 @@ describe("Mdx", () => {
   });
 
   test("renders all 4 custom blocks without throwing", async () => {
-    render(<Mdx content={validMdx} />);
+    render(
+      <Wrapper>
+        <Mdx content={validMdx} />
+      </Wrapper>,
+    );
     await waitFor(
       () => {
         expect(screen.queryByTestId("mdx-loading")).toBeNull();
@@ -61,7 +78,11 @@ describe("Mdx", () => {
     const brokenMdx = "<div unclosed";
 
     await act(async () => {
-      render(<Mdx content={brokenMdx} path="/docs/broken.mdx" />);
+      render(
+        <Wrapper>
+          <Mdx content={brokenMdx} path="/docs/broken.mdx" />
+        </Wrapper>,
+      );
     });
 
     await waitFor(
