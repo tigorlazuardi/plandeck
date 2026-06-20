@@ -1,5 +1,5 @@
 # Fleet run: visual-planner
-status: running
+status: done
 approved: true
 baseBranch: main
 integrationBranch: fleet/visual-planner
@@ -19,16 +19,17 @@ visualPlanUrl:
 - 2.3 [done] highlight + mermaid @ 2ed6116
 - 3.1 [done] CLI + lifecycle @ 74a9c28
 - 3.2 [done] live reload watcher/SSE @ 80b6fbf
-- 3.3 [pending] deps: all   orch: sonnet (error states + E2E)  <- DISPATCHING (wave 3b, FINAL)
+- 3.3 [done] error states + skeletons + README + real E2E @ 868a8ed
+- FIX [done] config DI: createApp(config) so CLI <dir>/flags reach routes @ 738eaeb (opus-reviewed)
 
 ## Waves
 - wave2a [done]: 2.1, 2.2, 2.4 (+ security hardening)
 - wave2b [done]: 2.3
 - wave3a [done]: 3.1, 3.2
-- wave3b: [3.3]   <- now (final)
+- wave3b [done]: 3.3 + config-DI fix
 
 ## Integration health
-- bun run check: CLEAN. bun test: 197 pass / 0 fail. (captain-verified post-3a; ALWAYS `bun install` after merges)
+- bun run check: CLEAN. bun test: 208 pass / 0 fail; e2e 4/4 (podman, real backend). RUN COMPLETE.
 - Two HIGH XSS findings (raw active-types, FTS5 snippet) fixed + opus-confirmed not bypassable.
 
 ## Knowledge persisted
