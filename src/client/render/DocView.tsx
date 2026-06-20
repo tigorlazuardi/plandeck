@@ -1,5 +1,7 @@
-import { Skeleton, Text } from "@mantine/core";
+import { FileX, ServerCrash, Weight } from "lucide-react";
 import { useDoc } from "../api.ts";
+import { ErrorCard } from "../shell/ErrorCard.tsx";
+import { DocSkeleton } from "../shell/LoadingSkeleton.tsx";
 import { HtmlView } from "./HtmlView.tsx";
 import { ImageView } from "./ImageView.tsx";
 import { Markdown } from "./Markdown.tsx";
@@ -15,28 +17,48 @@ export function DocView({ path }: DocViewProps) {
   const { data, isLoading, isError } = useDoc(path);
 
   if (isLoading) {
-    return (
-      <div>
-        <Skeleton height={20} mb="sm" />
-        <Skeleton height={20} mb="sm" />
-        <Skeleton height={20} mb="sm" width="60%" />
-      </div>
-    );
+    return <DocSkeleton />;
   }
 
   if (isError) {
     return (
-      <Text c="red" ta="center" mt="xl">
-        Failed to load document.
-      </Text>
+      <ErrorCard
+        icon={<ServerCrash size={16} />}
+        title="Document not found"
+        detail="This document may have been deleted or renamed."
+      />
     );
   }
 
   if (!data) {
     return (
-      <Text c="dimmed" ta="center" mt="xl">
-        No document selected.
-      </Text>
+      <ErrorCard
+        icon={<FileX size={16} />}
+        title="No document selected"
+        detail="Select a document from the sidebar."
+      />
+    );
+  }
+
+  if (data.tooLarge) {
+    return (
+      <ErrorCard
+        icon={<Weight size={16} />}
+        title="File too large to render"
+        detail="> 5 MB"
+        action={{ label: "Open raw", href: `/api/raw/${path}` }}
+      />
+    );
+  }
+
+  if (data.undecodable) {
+    return (
+      <ErrorCard
+        icon={<FileX size={16} />}
+        title="Cannot display file"
+        detail="Binary or undecodable content."
+        action={{ label: "Open raw", href: `/api/raw/${path}` }}
+      />
     );
   }
 
@@ -66,9 +88,5 @@ export function DocView({ path }: DocViewProps) {
     return <ImageView path={path} />;
   }
 
-  return (
-    <Text c="dimmed" ta="center" mt="xl">
-      Unsupported: {kind}
-    </Text>
-  );
+  return <ErrorCard icon={<FileX size={16} />} title={`Unsupported file type: ${kind}`} />;
 }

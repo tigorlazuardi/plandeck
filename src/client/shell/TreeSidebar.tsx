@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { TreeNode } from "../../shared/types.ts";
 import { useTree } from "../api.ts";
+import { TreeSkeleton } from "./LoadingSkeleton.tsx";
 
 function flattenFiles(nodes: TreeNode[]): TreeNode[] {
   const result: TreeNode[] = [];
@@ -50,15 +51,12 @@ export function TreeSidebar() {
   const [filter, setFilter] = useState("");
 
   if (isLoading) {
-    return (
-      <Text c="dimmed" size="sm">
-        Loading...
-      </Text>
-    );
+    return <TreeSkeleton />;
   }
 
   const allFiles = flattenFiles(data?.tree ?? []);
   const filtered = allFiles.filter((node) => matchesFilter(node, filter));
+  const root = data?.root ?? "";
 
   return (
     <Stack gap="xs">
@@ -68,9 +66,14 @@ export function TreeSidebar() {
         onChange={(e) => setFilter(e.currentTarget.value)}
         size="xs"
       />
-      {filtered.length === 0 ? (
+      {allFiles.length === 0 && !filter ? (
+        <Text c="dimmed" size="xs" data-testid="no-docs-empty">
+          No docs found under {root ? `"${root}"` : "the configured root"} — check{" "}
+          <code>.vpconfig.json</code> include/exclude, or that files aren&apos;t hidden/gitignored.
+        </Text>
+      ) : filtered.length === 0 ? (
         <Text c="dimmed" size="sm">
-          No docs found
+          No docs match &ldquo;{filter}&rdquo;
         </Text>
       ) : (
         filtered.map((node) => <FileNodeButton key={node.path} node={node} />)

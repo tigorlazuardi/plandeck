@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { FsEvent } from "../shared/types.ts";
 
@@ -7,11 +7,13 @@ export function useLiveReload() {
   const queryClient = useQueryClient();
   const params = useParams<{ "*": string }>();
   const currentDocPath = params["*"];
+  const [disconnected, setDisconnected] = useState(false);
 
   useEffect(() => {
     const es = new EventSource("/api/events");
 
     es.onmessage = (e: MessageEvent) => {
+      setDisconnected(false);
       const event = JSON.parse(e.data as string) as FsEvent;
       if (event.type === "ready") return;
 
@@ -29,11 +31,14 @@ export function useLiveReload() {
     };
 
     es.onerror = () => {
-      // EventSource auto-retries; nothing to do here
+      setDisconnected(true);
+      // EventSource auto-retries; nothing more to do here
     };
 
     return () => {
       es.close();
     };
   }, [queryClient, currentDocPath]);
+
+  return { disconnected };
 }

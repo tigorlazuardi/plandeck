@@ -1,4 +1,6 @@
-import { Anchor, Text } from "@mantine/core";
+import { ImageOff } from "lucide-react";
+import { useState } from "react";
+import { ErrorCard } from "../shell/ErrorCard.tsx";
 
 interface ImageViewProps {
   path: string;
@@ -6,44 +8,28 @@ interface ImageViewProps {
 
 /**
  * Renders an image via /api/raw/<path>.
- * On load error shows a placeholder card with a raw link fallback.
+ * On load error shows an ErrorCard fallback with a raw link.
  */
 export function ImageView({ path }: ImageViewProps) {
-  function handleError(e: React.SyntheticEvent<HTMLImageElement>) {
-    const img = e.currentTarget;
-    img.style.display = "none";
-    const placeholder = img.nextElementSibling as HTMLElement | null;
-    if (placeholder) {
-      placeholder.style.display = "flex";
-    }
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <ErrorCard
+        icon={<ImageOff size={16} />}
+        title="Image failed to load"
+        detail="The file could not be displayed."
+        action={{ label: "Open raw", href: `/api/raw/${path}` }}
+      />
+    );
   }
 
   return (
-    <div style={{ position: "relative" }}>
-      <img
-        src={`/api/raw/${path}`}
-        alt={path}
-        onError={handleError}
-        style={{ maxWidth: "100%", display: "block" }}
-      />
-      <div
-        style={{
-          display: "none",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "2rem",
-          border: "1px solid var(--mantine-color-gray-3)",
-          borderRadius: "8px",
-          gap: "0.5rem",
-        }}
-      >
-        <Text c="dimmed" ta="center">
-          Couldn&apos;t display this file.
-        </Text>
-        <Anchor href={`/api/raw/${path}`} target="_blank" rel="noopener noreferrer">
-          Open raw file
-        </Anchor>
-      </div>
-    </div>
+    <img
+      src={`/api/raw/${path}`}
+      alt={path}
+      onError={() => setFailed(true)}
+      style={{ maxWidth: "100%", display: "block" }}
+    />
   );
 }

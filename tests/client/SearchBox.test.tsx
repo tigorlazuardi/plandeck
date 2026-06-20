@@ -177,6 +177,6 @@ describe("SearchBox", () => {
       await new Promise((r) => setTimeout(r, 50));
     });
 
-    expect(screen.getByText("No results")).toBeTruthy();
+    expect(screen.getByText(/No matches for/)).toBeTruthy();
   });
 });

@@ -1,11 +1,13 @@
 import { useMantineColorScheme } from "@mantine/core";
 import { evaluate } from "@mdx-js/mdx";
 import { MDXProvider, useMDXComponents } from "@mdx-js/react";
+import { AlertCircle } from "lucide-react";
 import type React from "react";
 import { Component, useEffect, useState } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { components } from "../blocks/index.ts";
+import { ErrorCard } from "../shell/ErrorCard.tsx";
 import { Mermaid } from "./Mermaid.tsx";
 import { getRehypeShikiPlugin } from "./highlight.ts";
 
@@ -16,29 +18,9 @@ interface ParseErrorCardProps {
 
 function ParseErrorCard({ error, path }: ParseErrorCardProps) {
   return (
-    <div
-      data-testid="parse-error-card"
-      style={{
-        border: "1px solid #fa5252",
-        borderRadius: "6px",
-        padding: "16px",
-        background: "#fff5f5",
-        color: "#e03131",
-        fontFamily: "monospace",
-      }}
-    >
-      <strong>MDX Parse Error</strong>
-      {path && <div style={{ marginTop: "4px", fontSize: "12px", opacity: 0.8 }}>{path}</div>}
-      <pre
-        style={{
-          marginTop: "8px",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          fontSize: "13px",
-        }}
-      >
-        {error.message}
-      </pre>
+    <div data-testid="parse-error-card">
+      <ErrorCard icon={<AlertCircle size={16} />} title="MDX Parse Error" detail={error.message} />
+      {path && <div style={{ fontSize: 12, marginTop: 4, fontFamily: "monospace" }}>{path}</div>}
     </div>
   );
 }
