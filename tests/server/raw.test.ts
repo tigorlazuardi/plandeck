@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createApp } from "../../src/server/app.ts";
+import { resolveConfig } from "../../src/server/config.ts";
 import { sanitizeFilename } from "../../src/server/raw.ts";
 
 let tmpRoot: string;
@@ -19,19 +21,16 @@ beforeAll(() => {
     path.join(tmpRoot, "image.svg"),
     '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
   );
-
-  // Set VP_ROOT before importing app
-  process.env.VP_ROOT = tmpRoot;
 });
 
 afterAll(() => {
-  process.env.VP_ROOT = undefined;
   fs.rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-async function getApp() {
-  const mod = await import("../../src/server/app.ts");
-  return mod.app;
+function getApp() {
+  // Build a fresh app wired to tmpRoot — no env var needed, config is injected directly.
+  const config = resolveConfig({ root: tmpRoot }, { env: {} });
+  return createApp(config);
 }
 
 // ── confinedResolve unit tests (imported directly) ────────────────────────────
@@ -128,7 +127,7 @@ describe("confinedResolve", () => {
 // ── HTTP endpoint tests ───────────────────────────────────────────────────────
 describe("GET /api/raw/*", () => {
   it("serves pdf with application/pdf content-type", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.pdf");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -136,7 +135,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("serves png with image/png content-type", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.png");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -144,7 +143,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("serves jpg with image/jpeg content-type", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.jpg");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -152,7 +151,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("serves unknown ext with application/octet-stream", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/hello.txt");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -160,26 +159,26 @@ describe("GET /api/raw/*", () => {
   });
 
   it("rejects percent-encoded path traversal %2e%2e%2fetc%2fpasswd → 403", async () => {
-    const app = await getApp();
+    const app = getApp();
     // This reaches our handler because %2e%2e is NOT normalized by Hono router
     const res = await app.request("/api/raw/%2e%2e%2fetc%2fpasswd");
     expect(res.status === 403 || res.status === 404).toBe(true);
   });
 
   it("rejects encoded absolute path %2fetc%2fpasswd → 403", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/%2fetc%2fpasswd");
     expect(res.status === 403 || res.status === 404).toBe(true);
   });
 
   it("returns 404 for nonexistent file", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/doesnotexist.pdf");
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for directory", async () => {
-    const app = await getApp();
+    const app = getApp();
     fs.mkdirSync(path.join(tmpRoot, "testdir"), { recursive: true });
     const res = await app.request("/api/raw/testdir");
     expect(res.status === 403 || res.status === 404).toBe(true);
@@ -187,7 +186,7 @@ describe("GET /api/raw/*", () => {
 
   // XSS mitigation: active-content types must be forced to download
   it("html file → content-type octet-stream (not text/html)", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/page.html");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -196,7 +195,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("html file → has Content-Disposition: attachment", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/page.html");
     expect(res.status).toBe(200);
     const cd = res.headers.get("content-disposition") ?? "";
@@ -204,14 +203,14 @@ describe("GET /api/raw/*", () => {
   });
 
   it("html file → has X-Content-Type-Options: nosniff", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/page.html");
     expect(res.status).toBe(200);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
   it("svg file → content-type octet-stream (not image/svg+xml)", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/image.svg");
     expect(res.status).toBe(200);
     const ct = res.headers.get("content-type") ?? "";
@@ -220,7 +219,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("svg file → has Content-Disposition: attachment", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/image.svg");
     expect(res.status).toBe(200);
     const cd = res.headers.get("content-disposition") ?? "";
@@ -228,28 +227,28 @@ describe("GET /api/raw/*", () => {
   });
 
   it("pdf → has X-Content-Type-Options: nosniff", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.pdf");
     expect(res.status).toBe(200);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
   it("png → has X-Content-Type-Options: nosniff", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.png");
     expect(res.status).toBe(200);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
   });
 
   it("pdf → no Content-Disposition (served inline)", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.pdf");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-disposition")).toBeNull();
   });
 
   it("every raw response has Content-Security-Policy: sandbox", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/sample.pdf");
     expect(res.status).toBe(200);
     const csp = res.headers.get("content-security-policy") ?? "";
@@ -257,7 +256,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("404 response includes nosniff and CSP", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/doesnotexist.bin");
     expect(res.status).toBe(404);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
@@ -266,7 +265,7 @@ describe("GET /api/raw/*", () => {
   });
 
   it("403 response includes nosniff and CSP", async () => {
-    const app = await getApp();
+    const app = getApp();
     const res = await app.request("/api/raw/%2e%2e%2fetc%2fpasswd");
     expect(res.status === 403 || res.status === 404).toBe(true);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
@@ -287,7 +286,7 @@ describe("GET /api/raw/*", () => {
       return;
     }
     try {
-      const app = await getApp();
+      const app = getApp();
       const res = await app.request(`/api/raw/${encodeURIComponent(quotedName)}`);
       expect(res.status).toBe(200);
       const cd = res.headers.get("content-disposition") ?? "";

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import type { ResolvedConfig } from "../shared/types.ts";
-import { app } from "./app.ts";
+import { createApp } from "./app.ts";
 
 export type ServerHandle = ReturnType<typeof Bun.serve>;
 
@@ -36,7 +36,7 @@ export async function startServer(
       server = Bun.serve({
         hostname: config.host,
         port: tryPort,
-        fetch: app.fetch,
+        fetch: createApp(config).fetch,
       });
       actualPort = server.port ?? tryPort;
       break;
