@@ -18,7 +18,7 @@ cd "$WORKTREE_ROOT"
 bun run build
 
 echo "Starting server on port $PORT..."
-VP_PORT=$PORT bun "$WORKTREE_ROOT/bin/visual-planner.ts" "$FIXTURE_DIR" &
+VP_PORT=$PORT VP_ROOT=$FIXTURE_DIR VP_TITLE="Visual Planner" bun "$WORKTREE_ROOT/bin/visual-planner.ts" &
 SERVER_PID=$!
 
 echo "Waiting for server..."
