@@ -31,3 +31,13 @@ Durable patterns established in slice 1.2 (client shell + tree + render).
   reset clears the body directly rather than relying on RTL `cleanup()`.)
 - Mock ES modules with `mock.module()` from `bun:test` (not `jest.mock`); the mock path
   must match the import specifier used in the source file exactly.
+
+## ⚠️ `mock.module('@mantine/core')` is a worker-wide landmine
+`tests/client/HtmlView.test.tsx` mocks `@mantine/core` with a PARTIAL stub. bun shares one
+module registry per worker, so that stub leaks into EVERY other test in the same worker —
+any client file importing a Mantine export NOT in the stub fails with "Export named X not
+found". This has broken the suite 3+ times (each new Mantine component must be added to the
+stub). **Preferred fix: do NOT mock `@mantine/core` at all — render with a real
+`MantineProvider` wrapper** (the pattern the other client tests use). If you add a Mantine
+component anywhere in `src/client/`, either remove that mock (best) or add the export to the
+stub. Real Mantine + provider is the durable answer.
