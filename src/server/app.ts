@@ -1,18 +1,60 @@
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { streamSSE } from "hono/streaming";
 import type { SearchResponse, TreeResponse } from "../shared/types.ts";
 import { resolveConfig } from "./config.ts";
 import { discover } from "./discovery.ts";
+import { kindFor } from "./kind.ts";
 import { toProse } from "./prose.ts";
 import { rawHandler } from "./raw.ts";
 import { build } from "./search-index.ts";
 import type { SearchIndex } from "./search-index.ts";
+import { createWatcher } from "./watcher.ts";
 
 const app = new Hono();
 
 // Lazy-initialized search index (built on first /api/search call)
 let searchIndex: SearchIndex | null = null;
+
+// Shared watcher singleton — lazy-initialized on first SSE connection
+let sharedWatcher: ReturnType<typeof createWatcher> | null = null;
+
+function getSharedWatcher(): ReturnType<typeof createWatcher> {
+  if (!sharedWatcher) {
+    const config = resolveConfig();
+    sharedWatcher = createWatcher(config);
+
+    // Wire watcher events to update the search index incrementally
+    sharedWatcher.subscribe(async (event) => {
+      if (event.type === "ready") return;
+      if (event.type === "unlink") {
+        if (searchIndex) {
+          searchIndex.remove(event.path);
+        }
+        return;
+      }
+      // add or change — update index if text kind
+      const config2 = resolveConfig();
+      const basename = path.basename(event.path);
+      const kind = kindFor(basename, config2);
+      if (kind === "md" || kind === "mdx" || kind === "txt") {
+        const absPath = path.join(config2.root, event.path);
+        try {
+          const text = fs.readFileSync(absPath, "utf-8");
+          const prose = await toProse(text, kind);
+          if (searchIndex) {
+            searchIndex.upsert(event.path, prose, basename);
+          }
+        } catch {
+          // file unreadable — skip index update
+        }
+      }
+    });
+  }
+  return sharedWatcher;
+}
 
 async function getSearchIndex(): Promise<SearchIndex> {
   if (searchIndex) return searchIndex;
@@ -58,6 +100,22 @@ async function getSearchIndex(): Promise<SearchIndex> {
   searchIndex = build(indexFiles);
   return searchIndex;
 }
+
+app.get("/api/events", (c) => {
+  c.header("X-Accel-Buffering", "no");
+  return streamSSE(c, async (stream) => {
+    const watcher = getSharedWatcher();
+    const unsub = watcher.subscribe((event) => {
+      stream.writeSSE({ data: JSON.stringify(event) });
+    });
+    await new Promise<void>((resolve) => {
+      c.req.raw.signal.addEventListener("abort", () => {
+        unsub();
+        resolve();
+      });
+    });
+  });
+});
 
 app.get("/api/search", async (c) => {
   const q = c.req.query("q");
