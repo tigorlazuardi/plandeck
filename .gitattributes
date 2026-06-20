@@ -1,4 +1,11 @@
-*.ts text
-*.tsx text
-*.json text
-*.md text
+# Force LF in the working tree on ALL platforms (Windows included) so Biome's
+# LF formatter check passes in CI. Without eol=lf, Windows checks out CRLF.
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
