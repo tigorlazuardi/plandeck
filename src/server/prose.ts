@@ -4,6 +4,18 @@ import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 
+// Remove raw HTML nodes from mdast to prevent XSS via snippet
+function stripHtmlNodes(node: { type: string; children?: unknown[] }): void {
+  if (node.children) {
+    node.children = node.children.filter((c: unknown) => {
+      const child = c as { type: string; children?: unknown[] };
+      if (child.type === "html") return false;
+      stripHtmlNodes(child);
+      return true;
+    });
+  }
+}
+
 export async function toProse(text: string, kind: "md" | "mdx" | "txt"): Promise<string> {
   if (kind === "txt") {
     return text;
@@ -26,6 +38,9 @@ export async function toProse(text: string, kind: "md" | "mdx" | "txt"): Promise
       (node: any) => node.type !== "yaml" && node.type !== "toml",
     );
   }
+
+  // Remove raw HTML nodes from mdast to prevent XSS via FTS5 snippet
+  stripHtmlNodes(tree);
 
   const prose = mdastToString(tree);
 

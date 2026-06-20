@@ -16,6 +16,16 @@ export interface SearchIndex {
 
 const INDEXED_KINDS = new Set<DocKind>(["md", "mdx", "txt"]);
 
+// Escape HTML special chars in FTS5 snippet, then restore only <mark>/<mark> tags
+function sanitizeSnippet(raw: string): string {
+  return raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/&lt;mark&gt;/g, "<mark>")
+    .replace(/&lt;\/mark&gt;/g, "</mark>");
+}
+
 export function build(files: IndexFile[]): SearchIndex {
   const db = new Database(":memory:");
 
@@ -52,7 +62,7 @@ export function build(files: IndexFile[]): SearchIndex {
         return rows.map((r) => ({
           path: r.path,
           title: r.title,
-          snippet: r.snippet,
+          snippet: sanitizeSnippet(r.snippet),
           rank: r.rank,
         }));
       } catch {
