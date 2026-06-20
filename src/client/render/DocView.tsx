@@ -1,6 +1,7 @@
 import { Skeleton, Text } from "@mantine/core";
 import { useDoc } from "../api.ts";
 import { Markdown } from "./Markdown.tsx";
+import { Mdx } from "./Mdx.tsx";
 import { PlainText } from "./PlainText.tsx";
 
 interface DocViewProps {
@@ -38,7 +39,11 @@ export function DocView({ path }: DocViewProps) {
 
   const { kind, content } = data;
 
-  if (kind === "md" || kind === "mdx") {
+  if (kind === "mdx") {
+    return <Mdx content={content ?? ""} path={path} />;
+  }
+
+  if (kind === "md") {
     return <Markdown content={content ?? ""} />;
   }
 
