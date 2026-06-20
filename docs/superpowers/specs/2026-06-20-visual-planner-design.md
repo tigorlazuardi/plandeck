@@ -1,4 +1,4 @@
-# Visual Planner — Design Spec (v1)
+# Plandeck — Design Spec (v1)
 
 **Date:** 2026-06-20
 **Status:** approved for planning
@@ -59,7 +59,7 @@ modules**.
 **Added deps:**
 - **`hono`** — server framework
 - **`citty`** (unjs) — CLI: declarative args, auto `--help`/`--version`
-- **`zod`** — `.vpconfig.json` + resolved-config validation, friendly errors
+- **`zod`** — `.plandeck.json` + resolved-config validation, friendly errors
 - **`chokidar`** — cross-OS reliable fs watcher (recursive + ignore + debounce)
 - **`ignore`** — gitignore-spec matcher (fed nested `.gitignore` contents)
 - **`gray-matter`** — frontmatter parse
@@ -105,8 +105,8 @@ minimal dep count.
 
 ## 4. Invocation
 
-- `visual-planner` (no args) → serve current working directory
-- `visual-planner <dir>` → serve `<dir>`
+- `plandeck` (no args) → serve current working directory
+- `plandeck <dir>` → serve `<dir>`
 - Opens a local HTTP server; user browses in a browser. No flags required for the
   default flow.
 
@@ -133,7 +133,7 @@ minimal dep count.
 
 Recursive walk of the root directory, collecting **common documentation file types**.
 Files fall into two classes, both **viewable**; only **text** files are **indexed** for
-content search. Both extension lists are configurable in `.vpconfig.json` (§5 schema).
+content search. Both extension lists are configurable in `.plandeck.json` (§5 schema).
 
 **Text files** — viewed **and** indexed:
 
@@ -157,7 +157,7 @@ content search. Both extension lists are configurable in `.vpconfig.json` (§5 s
    `.cache`) → skipped by default.
 2. **`.gitignore`** respected by default, with proper gitignore semantics including
    nested `.gitignore` files.
-3. **`.vpconfig.json`** in the root → **always applied**, overrides the above. Can
+3. **`.plandeck.json`** in the root → **always applied**, overrides the above. Can
    restrict discovery to specific paths (include-only) or exclude paths, and can
    re-include something the defaults would skip (e.g. a hidden path).
 
@@ -174,7 +174,7 @@ content search. Both extension lists are configurable in `.vpconfig.json` (§5 s
   "binary/undecodable" notice instead of garbage; not indexed.
 - **Relpaths normalized to `/`** internally (cross-OS; Windows `\` normalized).
 
-### `.vpconfig.json` schema
+### `.plandeck.json` schema
 
 ```json
 {
@@ -204,18 +204,18 @@ content search. Both extension lists are configurable in `.vpconfig.json` (§5 s
 Settings resolve through layers, **later layers win per-key**:
 
 ```
-built-in defaults  <  ENV vars  <  .vpconfig.json  <  CLI args
+built-in defaults  <  ENV vars  <  .plandeck.json  <  CLI args
 ```
 
 (lowest precedence on the left; **CLI args always win**).
 
 | Setting        | Default                | ENV              | Config key      | CLI flag           |
 | -------------- | ---------------------- | ---------------- | --------------- | ------------------ |
-| root dir       | `cwd`                  | `VP_ROOT`        | —               | positional `<dir>` |
-| port           | `4321`                 | `VP_PORT`        | `port`          | `--port`           |
-| host           | `127.0.0.1`            | `VP_HOST`        | `host`          | `--host`           |
-| title          | root dir name          | `VP_TITLE`       | `title`         | `--title`          |
-| open browser   | `false`                | `VP_OPEN`        | `open`          | `--open`           |
+| root dir       | `cwd`                  | `PLANDECK_ROOT`        | —               | positional `<dir>` |
+| port           | `4321`                 | `PLANDECK_PORT`        | `port`          | `--port`           |
+| host           | `127.0.0.1`            | `PLANDECK_HOST`        | `host`          | `--host`           |
+| title          | root dir name          | `PLANDECK_TITLE`       | `title`         | `--title`          |
+| open browser   | `false`                | `PLANDECK_OPEN`        | `open`          | `--open`           |
 | include globs  | none                   | —                | `include`       | `--include` (rep.) |
 | exclude globs  | none                   | —                | `exclude`       | `--exclude` (rep.) |
 | text files     | `.md .mdx .txt`        | —                | `textFiles`     | —                  |
@@ -331,7 +331,7 @@ sidebar/tree stays usable throughout. Each state below is what the user actually
 | --- | --- | --- |
 | **Parse error** | bad MDX / malformed frontmatter | inline error **card** in the main pane: file path + the error message (and which line if available); rest of app unaffected. Optionally a "show raw" toggle to read the source. |
 | **Not found** | open doc was deleted/renamed | friendly "this document is gone" card; tree re-scans via SSE and the node disappears. |
-| **Empty / no docs** | root has no discoverable files | welcome/empty state in main pane: short explanation + hints ("no docs found under `<root>` — check `.vpconfig.json` `include`/`exclude`, or that files aren't hidden/gitignored"). |
+| **Empty / no docs** | root has no discoverable files | welcome/empty state in main pane: short explanation + hints ("no docs found under `<root>` — check `.plandeck.json` `include`/`exclude`, or that files aren't hidden/gitignored"). |
 | **Too large** | file over size cap (default 5 MB) | notice card: "too large to render (> 5 MB)"; the file is still listed; offer an "open raw" link (served via the raw endpoint). |
 | **Undecodable** | text-extension file fails UTF-8 decode | "binary or undecodable content" notice instead of garbage; not indexed. |
 | **Search: no results** | content/filename query matches nothing | inline "no matches for *query*" in the search panel; clearing the box restores the tree. |
@@ -352,7 +352,7 @@ Threat model: the app renders **untrusted document content** (an agent or arbitr
 in a directory) on `localhost`. Hardening invariants:
 
 - **Bind to `127.0.0.1` by default**, not `0.0.0.0` — no LAN/Internet exposure. LAN access
-  is opt-in only via `--host`/`VP_HOST`, and the startup banner makes a non-loopback bind
+  is opt-in only via `--host`/`PLANDECK_HOST`, and the startup banner makes a non-loopback bind
   explicit.
 - **No network egress / no telemetry** — the process makes zero outbound requests. Mermaid,
   Shiki, fonts, and all assets are bundled/served locally; nothing is fetched at runtime.
@@ -407,9 +407,9 @@ Scripts: `bun dev` (Vite + server), `bun start` (serve built client + server),
 
 Each unit has one purpose, a clear interface, and is independently testable:
 
-- **discovery** — walk + ignore-layering (hidden / gitignore / vpconfig) → file list.
+- **discovery** — walk + ignore-layering (hidden / gitignore / plandeck config) → file list.
   Pure-ish: given a root + config, returns the discovered relpaths.
-- **config** — resolve layered config (defaults < ENV < `.vpconfig.json` < CLI),
+- **config** — resolve layered config (defaults < ENV < `.plandeck.json` < CLI),
   validate, emit one resolved object.
 - **search-index** — `bun:sqlite` FTS5 wrapper: build, upsert, delete, query.
 - **prose-strip** — markdown/MDX → plain prose (feeds search-index).
@@ -425,7 +425,7 @@ Each unit has one purpose, a clear interface, and is independently testable:
 1. **Viewer skeleton** — server serves a hard-coded `.md`/`.mdx`; client renders markdown.
    Prove rendering early.
 2. **Custom blocks** — Callout, CodeTabs, Decision, HtmlBlock + frontmatter.
-3. **Discovery + sidebar** — recursive walk, ignore layers, `.vpconfig.json`, tree UI,
+3. **Discovery + sidebar** — recursive walk, ignore layers, `.plandeck.json`, tree UI,
    per-doc route; handle text (`.txt`) + non-text (`.html` sandboxed, `.pdf`,
    `.jpg`/`.png` images).
 4. **Search** — FTS5 index + prose-strip + filename filter + content-search UI.

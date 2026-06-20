@@ -1,4 +1,4 @@
-# Visual Planner Implementation Plan
+# Plandeck Implementation Plan
 
 > **For agentic workers:** This plan is structured for **fleet** execution — a DAG of
 > slices grouped into waves. Each slice is implemented test-first (`bun test`) by a
@@ -19,14 +19,14 @@ gray-matter, remark stack; Vite, React, @mdx-js, react-markdown, @shikijs/rehype
 Mantine, React Router, TanStack Query, lucide-react. TypeScript strict. Biome. bun:test +
 happy-dom + Testing Library; Playwright E2E.
 
-**Spec:** `docs/superpowers/specs/2026-06-20-visual-planner-design.md` — authoritative.
+**Spec:** `docs/superpowers/specs/2026-06-20-visual-planner-design.md` — authoritative. (filename unchanged; human-facing name is now Plandeck)
 Read it before implementing any slice.
 
 ## Global Constraints
 
 - **Local-only, no network egress, no telemetry.** Zero outbound requests at runtime; all
   assets (Mermaid, Shiki, fonts) bundled/served locally.
-- **Bind `127.0.0.1` by default.** Non-loopback only via `--host`/`VP_HOST`.
+- **Bind `127.0.0.1` by default.** Non-loopback only via `--host`/`PLANDECK_HOST`.
 - **Zero native modules.** Pure-JS deps only (`bun:sqlite` is built in, not a native dep).
 - **Read-only viewer.** No editing/round-trip in v1.
 - **No `@agent-native` / builder.io runtime dependency.**
@@ -37,7 +37,7 @@ Read it before implementing any slice.
 - **TypeScript `strict`.** Biome clean (`bun run check`) before any slice merges.
 - **Default text exts** `.md .mdx .txt`; **non-text** `.html .htm .pdf .jpg .jpeg .png`.
   Only text files are indexed for search.
-- **Config layering** (per-key, later wins): defaults < ENV (`VP_*`) < `.vpconfig.json` < CLI.
+- **Config layering** (per-key, later wins): defaults < ENV (`PLANDECK_*`) < `.plandeck.json` < CLI.
 - **Size cap** default 5 MB (configurable later); over-cap files listed but not rendered/indexed.
 
 ---
@@ -121,7 +121,7 @@ All `*` splat paths are relpaths, confined to root.
 - `src/server/index.ts` (Hono app, serves a stub `/api/tree` returning `{root,title,tree:[]}`
   and the SPA; binds `127.0.0.1`)
 - `src/client/main.tsx` + `src/client/App.tsx` (Mantine provider + React Router + TanStack
-  Query provider; renders "Visual Planner" shell, empty tree)
+  Query provider; renders "Plandeck" shell, empty tree)
 - `.github/workflows/ci.yml` (matrix ubuntu/macos/windows: setup-bun, install, `bun run
   check`, `bun test`, build; Playwright e2e on ubuntu only)
 - `tests/server/health.test.ts`
@@ -149,7 +149,7 @@ Query wiring that all later slices build on.
 
 **Files (create):**
 - `src/server/config.ts` — resolve layered config → `ResolvedConfig` (zod-validated).
-  Loads `.vpconfig.json`, merges defaults < ENV < file < CLI (CLI passed in from cli slice
+  Loads `.plandeck.json`, merges defaults < ENV < file < CLI (CLI passed in from cli slice
   later; for now accept an overrides arg).
 - `src/server/discovery.ts` — `discover(config): TreeNode[]`. Hand-rolled recursive walk
   (`node:fs` `readdir({withFileTypes})` + `lstat`): skip symlinks, skip hidden, apply
@@ -158,7 +158,7 @@ Query wiring that all later slices build on.
 - `src/server/kind.ts` — `kindFor(path, config): DocKind | null`.
 - Wire `GET /api/tree` to real discovery.
 - Tests: `tests/server/discovery.test.ts`, `tests/server/config.test.ts` (use temp dirs
-  with fixtures: hidden files, gitignored paths, vpconfig include/exclude, symlink, mixed
+  with fixtures: hidden files, gitignored paths, plandeck config include/exclude, symlink, mixed
   extensions, casing).
 
 **Acceptance:** `bun test tests/server/discovery.test.ts tests/server/config.test.ts`
@@ -293,14 +293,14 @@ attributes asserted; pdf/image display via raw endpoint.
 - `src/server/cli.ts` — `citty` command: positional `<dir>`, flags
   `--port --host --title --open --include --exclude --hidden --no-gitignore`,
   auto `--help`/`--version`. Feeds CLI overrides into `resolveConfig`.
-- `bin/visual-planner.ts` (entry) — wires cli → config → server start.
+- `bin/plandeck.ts` (entry) — wires cli → config → server start.
 - Lifecycle in `src/server/index.ts`: startup banner (resolved root + clickable URL),
   bad-root error exit, **port auto-fallback** (increment to next free), graceful shutdown
   (SIGINT/SIGTERM close watcher + SSE + server), `--open` via `open`.
 - Tests: `tests/server/config.test.ts` extended for CLI-layer precedence; `tests/server/
   port.test.ts` (fallback picks next free port).
 
-**Acceptance:** `bun test` green; `visual-planner --help` prints usage; bad dir exits
+**Acceptance:** `bun test` green; `plandeck --help` prints usage; bad dir exits
 non-zero with a clear message; busy port falls back and banner prints the actual port.
 
 ### Slice 3.2: Live reload (watcher → SSE) + incremental index
@@ -357,7 +357,7 @@ clean; all unit tests green.
 
 ## Self-review notes (spec coverage)
 
-- Discovery/ignore/config/vpconfig → 1.1 + 3.1. Search (FTS5/prose, text-only) → 2.2.
+- Discovery/ignore/config/plandeck-config → 1.1 + 3.1. Search (FTS5/prose, text-only) → 2.2.
   Tree sidebar + filter → 1.2. MDX blocks → 2.1. Highlight/mermaid → 2.3. html/pdf/image +
   raw + sandbox → 2.4. CLI/lifecycle/port/banner → 3.1. Live reload/watcher/SSE → 3.2.
   Error/empty states + E2E → 3.3. Security invariants enforced in 0.1 (bind), 2.1/2.4

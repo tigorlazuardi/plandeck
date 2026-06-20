@@ -7,7 +7,7 @@ import type { ResolvedConfig } from "../shared/types.ts";
 
 const ExtListSchema = z.array(z.string().regex(/^\./, "Extensions must start with '.'"));
 
-const VpConfigFileSchema = z
+const PlandeckConfigFileSchema = z
   .object({
     port: z.number().int().positive().optional(),
     host: z.string().optional(),
@@ -51,12 +51,12 @@ const BUILTIN_DEFAULTS = {
 
 /**
  * Resolve config from layered sources. Precedence (later wins per key):
- *   built-in defaults < ENV (VP_*) < .vpconfig.json < overrides arg (CLI)
+ *   built-in defaults < ENV (PLANDECK_*) < .plandeck.json < overrides arg (CLI)
  *
  * Resolution order subtlety:
- *   1. Resolve root: defaults < env(VP_ROOT) < overrides.root
- *   2. Read .vpconfig.json from that root
- *   3. Merge: defaults → env → vpconfig → overrides
+ *   1. Resolve root: defaults < env(PLANDECK_ROOT) < overrides.root
+ *   2. Read .plandeck.json from that root
+ *   3. Merge: defaults → env → plandeck config → overrides
  *   4. title-from-basename if no layer provided a title
  *   5. Validate final shape via zod
  */
@@ -69,57 +69,57 @@ export function resolveConfig(
 
   // Step 1: resolve root first (defaults < env < overrides)
   const defaultRoot = cwd;
-  const envRoot = env.VP_ROOT;
+  const envRoot = env.PLANDECK_ROOT;
   const root = overrides?.root ?? envRoot ?? defaultRoot;
 
-  // Step 2: read .vpconfig.json from resolved root
-  let vpconfig: z.infer<typeof VpConfigFileSchema> = {};
-  const vpconfigPath = path.join(root, ".vpconfig.json");
-  if (fs.existsSync(vpconfigPath)) {
+  // Step 2: read .plandeck.json from resolved root
+  let pdconfig: z.infer<typeof PlandeckConfigFileSchema> = {};
+  const pdconfigPath = path.join(root, ".plandeck.json");
+  if (fs.existsSync(pdconfigPath)) {
     let raw: unknown;
     try {
-      raw = JSON.parse(fs.readFileSync(vpconfigPath, "utf-8"));
+      raw = JSON.parse(fs.readFileSync(pdconfigPath, "utf-8"));
     } catch (e) {
       throw new Error(
-        `Failed to parse .vpconfig.json at ${vpconfigPath}: ${e instanceof Error ? e.message : String(e)}`,
+        `Failed to parse .plandeck.json at ${pdconfigPath}: ${e instanceof Error ? e.message : String(e)}`,
       );
     }
-    const result = VpConfigFileSchema.safeParse(raw);
+    const result = PlandeckConfigFileSchema.safeParse(raw);
     if (!result.success) {
       throw new Error(
-        `Invalid .vpconfig.json at ${vpconfigPath}: ${result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ")}`,
+        `Invalid .plandeck.json at ${pdconfigPath}: ${result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ")}`,
       );
     }
-    vpconfig = result.data;
+    pdconfig = result.data;
   }
 
   // Step 3: parse ENV values
-  const envPort = env.VP_PORT !== undefined ? Number(env.VP_PORT) : undefined;
-  const envHost = env.VP_HOST;
-  const envTitle = env.VP_TITLE;
-  const envOpenRaw = env.VP_OPEN;
+  const envPort = env.PLANDECK_PORT !== undefined ? Number(env.PLANDECK_PORT) : undefined;
+  const envHost = env.PLANDECK_HOST;
+  const envTitle = env.PLANDECK_TITLE;
+  const envOpenRaw = env.PLANDECK_OPEN;
   const envOpen =
     envOpenRaw !== undefined ? envOpenRaw === "true" || envOpenRaw === "1" : undefined;
 
   // Track whether any layer explicitly set a title (for basename fallback logic)
   const anyTitleSet =
-    overrides?.title !== undefined || vpconfig.title !== undefined || envTitle !== undefined;
+    overrides?.title !== undefined || pdconfig.title !== undefined || envTitle !== undefined;
 
   // Step 4: merge layers (later wins per key)
-  // defaults → env → vpconfig → overrides
+  // defaults → env → pdconfig → overrides
   const merged: ResolvedConfig = {
     root,
-    port: overrides?.port ?? vpconfig.port ?? envPort ?? BUILTIN_DEFAULTS.port,
-    host: overrides?.host ?? vpconfig.host ?? envHost ?? BUILTIN_DEFAULTS.host,
+    port: overrides?.port ?? pdconfig.port ?? envPort ?? BUILTIN_DEFAULTS.port,
+    host: overrides?.host ?? pdconfig.host ?? envHost ?? BUILTIN_DEFAULTS.host,
     title:
-      overrides?.title ?? vpconfig.title ?? envTitle ?? (anyTitleSet ? "" : path.basename(root)),
-    open: overrides?.open ?? vpconfig.open ?? envOpen ?? BUILTIN_DEFAULTS.open,
-    include: overrides?.include ?? vpconfig.include ?? BUILTIN_DEFAULTS.include,
-    exclude: overrides?.exclude ?? vpconfig.exclude ?? BUILTIN_DEFAULTS.exclude,
-    textFiles: overrides?.textFiles ?? vpconfig.textFiles ?? [...BUILTIN_DEFAULTS.textFiles],
+      overrides?.title ?? pdconfig.title ?? envTitle ?? (anyTitleSet ? "" : path.basename(root)),
+    open: overrides?.open ?? pdconfig.open ?? envOpen ?? BUILTIN_DEFAULTS.open,
+    include: overrides?.include ?? pdconfig.include ?? BUILTIN_DEFAULTS.include,
+    exclude: overrides?.exclude ?? pdconfig.exclude ?? BUILTIN_DEFAULTS.exclude,
+    textFiles: overrides?.textFiles ?? pdconfig.textFiles ?? [...BUILTIN_DEFAULTS.textFiles],
     nonTextFiles: overrides?.nonTextFiles ??
-      vpconfig.nonTextFiles ?? [...BUILTIN_DEFAULTS.nonTextFiles],
-    maxFileBytes: overrides?.maxFileBytes ?? vpconfig.maxFileBytes ?? BUILTIN_DEFAULTS.maxFileBytes,
+      pdconfig.nonTextFiles ?? [...BUILTIN_DEFAULTS.nonTextFiles],
+    maxFileBytes: overrides?.maxFileBytes ?? pdconfig.maxFileBytes ?? BUILTIN_DEFAULTS.maxFileBytes,
   };
 
   // Step 5: title fallback to basename if nothing set it

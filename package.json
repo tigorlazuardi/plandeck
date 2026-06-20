@@ -1,7 +1,10 @@
 {
-  "name": "visual-planner",
+  "name": "plandeck",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "plandeck": "bin/plandeck.ts"
+  },
   "scripts": {
     "dev": "vite",
     "start": "bun src/server/index.ts",

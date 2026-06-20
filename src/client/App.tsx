@@ -26,7 +26,7 @@ export function App() {
     },
   });
 
-  const title = (data as { title?: string } | undefined)?.title ?? "Visual Planner";
+  const title = (data as { title?: string } | undefined)?.title ?? "Plandeck";
 
   return (
     <AppShell

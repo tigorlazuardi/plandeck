@@ -12,7 +12,7 @@ import { resolveConfig } from "../../src/server/config.ts";
 let fixtureDir: string;
 
 beforeAll(() => {
-  // Create a temp fixture dir that is NOT cwd — simulates `visual-planner /some/dir`
+  // Create a temp fixture dir that is NOT cwd — simulates `plandeck /some/dir`
   fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "vp-inject-test-"));
   fs.writeFileSync(path.join(fixtureDir, "alpha.md"), "# Alpha");
   fs.writeFileSync(path.join(fixtureDir, "beta.txt"), "beta content");

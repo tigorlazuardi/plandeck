@@ -1,4 +1,4 @@
-# Visual Planner
+# Plandeck
 
 Local read-only doc viewer. Serve any directory of Markdown, MDX, HTML, PDF, images, and plain text files as a searchable web app with live reload.
 
@@ -37,9 +37,9 @@ Builds and serves `<dir>` on `http://localhost:3000`. Flags:
 | `--hidden` | false | Include hidden files/dirs |
 | `--no-gitignore` | false | Disable `.gitignore` filtering |
 
-## `.vpconfig.json`
+## `.plandeck.json`
 
-Place a `.vpconfig.json` in the served directory to set defaults:
+Place a `.plandeck.json` in the served directory to set defaults:
 
 ```json
 {

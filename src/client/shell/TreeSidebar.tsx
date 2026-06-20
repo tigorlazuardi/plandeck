@@ -69,7 +69,7 @@ export function TreeSidebar() {
       {allFiles.length === 0 && !filter ? (
         <Text c="dimmed" size="xs" data-testid="no-docs-empty">
           No docs found under {root ? `"${root}"` : "the configured root"} — check{" "}
-          <code>.vpconfig.json</code> include/exclude, or that files aren&apos;t hidden/gitignored.
+          <code>.plandeck.json</code> include/exclude, or that files aren&apos;t hidden/gitignored.
         </Text>
       ) : filtered.length === 0 ? (
         <Text c="dimmed" size="sm">

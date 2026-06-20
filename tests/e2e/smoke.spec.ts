@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Visual Planner E2E", () => {
+test.describe("Plandeck E2E", () => {
   test("tree sidebar lists fixture docs", async ({ page }) => {
     await page.goto("/");
     // Wait for tree to load — all three fixture docs should appear

@@ -87,17 +87,19 @@ describe("buildCliOverrides", () => {
 });
 
 describe("CLI args win over ENV via resolveConfig", () => {
-  it("CLI port beats VP_PORT env", async () => {
+  it("CLI port beats PLANDECK_PORT env", async () => {
     const { resolveConfig } = await import("../../src/server/config.ts");
     const overrides = buildCliOverrides({ port: 5555 });
-    const cfg = resolveConfig(overrides, { env: { VP_PORT: "9999", VP_ROOT: "/tmp" } });
+    const cfg = resolveConfig(overrides, { env: { PLANDECK_PORT: "9999", PLANDECK_ROOT: "/tmp" } });
     expect(cfg.port).toBe(5555);
   });
 
-  it("CLI host beats VP_HOST env", async () => {
+  it("CLI host beats PLANDECK_HOST env", async () => {
     const { resolveConfig } = await import("../../src/server/config.ts");
     const overrides = buildCliOverrides({ host: "0.0.0.0" });
-    const cfg = resolveConfig(overrides, { env: { VP_HOST: "127.0.0.1", VP_ROOT: "/tmp" } });
+    const cfg = resolveConfig(overrides, {
+      env: { PLANDECK_HOST: "127.0.0.1", PLANDECK_ROOT: "/tmp" },
+    });
     expect(cfg.host).toBe("0.0.0.0");
   });
 });

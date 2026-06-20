@@ -19,12 +19,12 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("App header", () => {
-  it("renders Visual Planner text", () => {
+  it("renders Plandeck text", () => {
     render(
       <Wrapper>
         <App />
       </Wrapper>,
     );
-    expect(screen.getByText("Visual Planner")).toBeTruthy();
+    expect(screen.getByText("Plandeck")).toBeTruthy();
   });
 });

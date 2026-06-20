@@ -63,7 +63,7 @@ export function buildCliOverrides(args: CliArgs): CliOverrides {
 
 export const cli = defineCommand({
   meta: {
-    name: "visual-planner",
+    name: "plandeck",
     version: "0.1.0",
     description: "Serve a directory of docs as a local read-only web app",
   },

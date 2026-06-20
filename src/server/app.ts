@@ -245,7 +245,7 @@ export function createApp(config: ResolvedConfig): Hono {
   return app;
 }
 
-// Back-compat default export: resolves config the same way as before (defaults < ENV < .vpconfig.json)
+// Back-compat default export: resolves config the same way as before (defaults < ENV < .plandeck.json)
 // Used by existing tests that import `app` directly without a config override.
 const app = createApp(resolveConfig());
 

@@ -18,18 +18,18 @@ extends config layering (3.1 CLI, 3.2 watcher, 2.2 search all depend on these).
 Precedence, later wins **per-key**:
 
 ```
-built-in defaults  <  ENV (VP_*)  <  .vpconfig.json  <  overrides arg (CLI layer)
+built-in defaults  <  ENV (PLANDECK_*)  <  .plandeck.json  <  overrides arg (CLI layer)
 ```
 
-- **Root resolved FIRST** (defaults < `VP_ROOT` < overrides), *then* `.vpconfig.json`
+- **Root resolved FIRST** (defaults < `PLANDECK_ROOT` < overrides), *then* `.plandeck.json`
   is read from that resolved root, then the full merge applies, then overrides go on
-  top so CLI always wins. Do not read vpconfig before resolving root.
+  top so CLI always wins. Do not read plandeck config before resolving root.
 - **Lists replace wholesale** — `include`, `exclude`, `textFiles`, `nonTextFiles`:
   a layer that sets the key replaces the entire list. No append/merge across layers.
 - **`title`** falls back to `path.basename(root)` **only** when no layer set it.
-- ENV scalars only: `VP_ROOT`, `VP_PORT` (number), `VP_HOST`, `VP_TITLE`,
-  `VP_OPEN` ('true'/'1' → true). No ENV for list keys (per spec table).
-- **`.vpconfig.json` is zod-validated and `.strict()`** — it has NO `root` key, and
+- ENV scalars only: `PLANDECK_ROOT`, `PLANDECK_PORT` (number), `PLANDECK_HOST`, `PLANDECK_TITLE`,
+  `PLANDECK_OPEN` ('true'/'1' → true). No ENV for list keys (per spec table).
+- **`.plandeck.json` is zod-validated and `.strict()`** — it has NO `root` key, and
   any unknown key throws a friendly error (catches typos). The final `ResolvedConfig`
   is also zod-validated (port int > 0, exts start with `.`, etc).
 - zod is **v4**: `ZodError` uses `.issues` (not `.errors`) —
@@ -75,5 +75,5 @@ Hand-rolled recursive walk — `readdirSync(dir, { withFileTypes: true })` +
 
 ## Biome
 
-Use dot notation for known keys: `env.VP_PORT`, not `env["VP_PORT"]`
+Use dot notation for known keys: `env.PLANDECK_PORT`, not `env["PLANDECK_PORT"]`
 (lint `complexity/useLiteralKeys`).

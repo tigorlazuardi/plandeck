@@ -2,7 +2,7 @@
 paths: ["src/client/**", "tests/client/**"]
 ---
 
-# Visual Planner client conventions
+# Plandeck client conventions
 
 Durable patterns established in slice 1.2 (client shell + tree + render).
 

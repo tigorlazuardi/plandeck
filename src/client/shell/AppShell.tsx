@@ -38,7 +38,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ sidebar, main }: AppLayoutProps) {
   const { data } = useTree();
-  const title = data?.title ?? "Visual Planner";
+  const title = data?.title ?? "Plandeck";
   const { disconnected } = useLiveReload();
 
   return (

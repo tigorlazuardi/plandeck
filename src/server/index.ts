@@ -5,7 +5,7 @@ import { createApp } from "./app.ts";
 export type ServerHandle = ReturnType<typeof Bun.serve>;
 
 /**
- * Start the Visual Planner server with lifecycle management.
+ * Start the Plandeck server with lifecycle management.
  *
  * - Validates root directory exists and is a directory
  * - Attempts port; on EADDRINUSE increments by 1 up to +10
@@ -63,7 +63,7 @@ export async function startServer(
   const url = `http://${config.host}:${actualPort}`;
   // OSC 8 hyperlink: \x1b]8;;<url>\x1b\\ <text> \x1b]8;;\x1b\\
   const hyperlink = `\x1b]8;;${url}\x1b\\${url}\x1b]8;;\x1b\\`;
-  console.log(`Visual Planner\nRoot: ${config.root}\nURL:  ${hyperlink}\n`);
+  console.log(`Plandeck\nRoot: ${config.root}\nURL:  ${hyperlink}\n`);
 
   // Graceful shutdown
   const shutdown = () => {

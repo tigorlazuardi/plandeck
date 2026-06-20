@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe("resolveConfig - defaults", () => {
-  it("returns built-in defaults when no overrides/env/vpconfig", () => {
+  it("returns built-in defaults when no overrides/env/plandeck config", () => {
     const cfg = resolveConfig({ root: tmpDir }, { env: {} });
     expect(cfg.root).toBe(tmpDir);
     expect(cfg.port).toBe(4321);
@@ -35,40 +35,40 @@ describe("resolveConfig - defaults", () => {
 });
 
 describe("resolveConfig - ENV overrides", () => {
-  it("VP_PORT overrides port (parsed as number)", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_PORT: "8080" } });
+  it("PLANDECK_PORT overrides port (parsed as number)", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_PORT: "8080" } });
     expect(cfg.port).toBe(8080);
   });
 
-  it("VP_HOST overrides host", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_HOST: "0.0.0.0" } });
+  it("PLANDECK_HOST overrides host", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_HOST: "0.0.0.0" } });
     expect(cfg.host).toBe("0.0.0.0");
   });
 
-  it("VP_TITLE overrides title", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_TITLE: "My Docs" } });
+  it("PLANDECK_TITLE overrides title", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_TITLE: "My Docs" } });
     expect(cfg.title).toBe("My Docs");
   });
 
-  it("VP_OPEN=true → open=true", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_OPEN: "true" } });
+  it("PLANDECK_OPEN=true → open=true", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_OPEN: "true" } });
     expect(cfg.open).toBe(true);
   });
 
-  it("VP_OPEN=1 → open=true", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_OPEN: "1" } });
+  it("PLANDECK_OPEN=1 → open=true", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_OPEN: "1" } });
     expect(cfg.open).toBe(true);
   });
 
-  it("VP_OPEN=false → open=false", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_OPEN: "false" } });
+  it("PLANDECK_OPEN=false → open=false", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_OPEN: "false" } });
     expect(cfg.open).toBe(false);
   });
 
-  it("VP_ROOT overrides root", () => {
+  it("PLANDECK_ROOT overrides root", () => {
     const sub = fs.mkdtempSync(path.join(os.tmpdir(), "vp-root-"));
     try {
-      const cfg = resolveConfig(undefined, { env: { VP_ROOT: sub } });
+      const cfg = resolveConfig(undefined, { env: { PLANDECK_ROOT: sub } });
       expect(cfg.root).toBe(sub);
     } finally {
       fs.rmSync(sub, { recursive: true, force: true });
@@ -76,10 +76,10 @@ describe("resolveConfig - ENV overrides", () => {
   });
 });
 
-describe("resolveConfig - .vpconfig.json", () => {
-  it("reads include/exclude from vpconfig", () => {
+describe("resolveConfig - .plandeck.json", () => {
+  it("reads include/exclude from plandeck config", () => {
     fs.writeFileSync(
-      path.join(tmpDir, ".vpconfig.json"),
+      path.join(tmpDir, ".plandeck.json"),
       JSON.stringify({ include: ["docs/**"], exclude: ["private/**"] }),
     );
     const cfg = resolveConfig({ root: tmpDir }, { env: {} });
@@ -89,58 +89,58 @@ describe("resolveConfig - .vpconfig.json", () => {
 
   it("lists REPLACE wholesale (no merge)", () => {
     fs.writeFileSync(
-      path.join(tmpDir, ".vpconfig.json"),
+      path.join(tmpDir, ".plandeck.json"),
       JSON.stringify({ textFiles: [".rst", ".tex"] }),
     );
     const cfg = resolveConfig({ root: tmpDir }, { env: {} });
     expect(cfg.textFiles).toEqual([".rst", ".tex"]);
   });
 
-  it("vpconfig title overrides basename default", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ title: "VPC Title" }));
+  it("plandeck config title overrides basename default", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ title: "VPC Title" }));
     const cfg = resolveConfig({ root: tmpDir }, { env: {} });
     expect(cfg.title).toBe("VPC Title");
   });
 
-  it("throws on invalid JSON in vpconfig", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), "{ not json }");
+  it("throws on invalid JSON in plandeck config", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), "{ not json }");
     expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
   });
 
-  it("throws on schema violation in vpconfig (bad type)", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ port: "not-a-number" }));
+  it("throws on schema violation in plandeck config (bad type)", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ port: "not-a-number" }));
     expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
   });
 });
 
 describe("resolveConfig - precedence chain", () => {
-  it("overrides arg beats vpconfig beats ENV beats defaults (per-key)", () => {
-    // ENV sets port=8080, vpconfig sets port=9000, override sets port=1234
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ port: 9000 }));
-    const cfg = resolveConfig({ root: tmpDir, port: 1234 }, { env: { VP_PORT: "8080" } });
+  it("overrides arg beats plandeck config beats ENV beats defaults (per-key)", () => {
+    // ENV sets port=8080, plandeck config sets port=9000, override sets port=1234
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ port: 9000 }));
+    const cfg = resolveConfig({ root: tmpDir, port: 1234 }, { env: { PLANDECK_PORT: "8080" } });
     expect(cfg.port).toBe(1234); // override wins
   });
 
-  it("vpconfig beats ENV when override not set", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ port: 9000 }));
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_PORT: "8080" } });
-    expect(cfg.port).toBe(9000); // vpconfig beats ENV
+  it("plandeck config beats ENV when override not set", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ port: 9000 }));
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_PORT: "8080" } });
+    expect(cfg.port).toBe(9000); // plandeck config beats ENV
   });
 
-  it("ENV beats defaults when no vpconfig or override", () => {
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_PORT: "8080" } });
+  it("ENV beats defaults when no plandeck config or override", () => {
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_PORT: "8080" } });
     expect(cfg.port).toBe(8080);
   });
 
-  it("overrides-arg title beats vpconfig title", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ title: "VPC Title" }));
+  it("overrides-arg title beats plandeck config title", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ title: "VPC Title" }));
     const cfg = resolveConfig({ root: tmpDir, title: "CLI Title" }, { env: {} });
     expect(cfg.title).toBe("CLI Title");
   });
 
-  it("VP_TITLE beats basename but loses to vpconfig", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ title: "VPC Title" }));
-    const cfg = resolveConfig({ root: tmpDir }, { env: { VP_TITLE: "ENV Title" } });
+  it("PLANDECK_TITLE beats basename but loses to plandeck config", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ title: "VPC Title" }));
+    const cfg = resolveConfig({ root: tmpDir }, { env: { PLANDECK_TITLE: "ENV Title" } });
     expect(cfg.title).toBe("VPC Title");
   });
 });
@@ -152,17 +152,17 @@ describe("resolveConfig - title fallback", () => {
   });
 });
 
-describe("resolveConfig - .vpconfig.json strict schema", () => {
-  it("throws a clear error when vpconfig contains unknown key 'root'", () => {
+describe("resolveConfig - .plandeck.json strict schema", () => {
+  it("throws a clear error when plandeck config contains unknown key 'root'", () => {
     fs.writeFileSync(
-      path.join(tmpDir, ".vpconfig.json"),
+      path.join(tmpDir, ".plandeck.json"),
       JSON.stringify({ root: "/some/path", port: 4321 }),
     );
     expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
   });
 
-  it("throws a clear error when vpconfig contains any unknown key", () => {
-    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ unknownKey: "value" }));
+  it("throws a clear error when plandeck config contains any unknown key", () => {
+    fs.writeFileSync(path.join(tmpDir, ".plandeck.json"), JSON.stringify({ unknownKey: "value" }));
     expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
   });
 });

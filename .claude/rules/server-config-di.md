@@ -21,5 +21,5 @@ in `738eaeb`).
   (first `/api/events` only) — so the back-compat singleton creates no eager watcher / no
   leak. Tests should build their own `createApp(resolveConfig({ root }, { env: {} }))` with
   an explicit root rather than relying on env mutation.
-- Config layering is still `defaults < ENV (VP_*) < .vpconfig.json < CLI` — see
+- Config layering is still `defaults < ENV (PLANDECK_*) < .plandeck.json < CLI` — see
   [[server-config-and-discovery]].
