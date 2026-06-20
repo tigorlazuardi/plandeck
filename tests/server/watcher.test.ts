@@ -1,11 +1,10 @@
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import type { FsEvent } from "../../src/shared/types.ts";
 import type { Watcher } from "../../src/server/watcher.ts";
 import { createWatcher } from "../../src/server/watcher.ts";
-import type { ResolvedConfig } from "../../src/shared/types.ts";
+import type { FsEvent, ResolvedConfig } from "../../src/shared/types.ts";
 
 function makeConfig(root: string): ResolvedConfig {
   return {
@@ -24,6 +23,13 @@ function makeConfig(root: string): ResolvedConfig {
 
 function waitMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function fsEventPath(e: FsEvent): string | undefined {
+  if (e.type === "add" || e.type === "change" || e.type === "unlink") {
+    return e.path;
+  }
+  return undefined;
 }
 
 describe("createWatcher", () => {
@@ -57,10 +63,9 @@ describe("createWatcher", () => {
     const addEvents = events.filter((e) => e.type === "add");
     expect(addEvents.length).toBeGreaterThanOrEqual(1);
     const addEvent = addEvents[0];
+    if (addEvent === undefined) throw new Error("Expected at least one add event");
     expect(addEvent.type).toBe("add");
-    if (addEvent.type === "add" || addEvent.type === "change" || addEvent.type === "unlink") {
-      expect(addEvent.path).toBe("hello.md");
-    }
+    expect(fsEventPath(addEvent)).toBe("hello.md");
   });
 
   it("emits change event after modifying a file", async () => {
@@ -80,9 +85,8 @@ describe("createWatcher", () => {
     const changeEvents = events.filter((e) => e.type === "change");
     expect(changeEvents.length).toBeGreaterThanOrEqual(1);
     const changeEvent = changeEvents[0];
-    if (changeEvent.type === "add" || changeEvent.type === "change" || changeEvent.type === "unlink") {
-      expect(changeEvent.path).toBe("edit.md");
-    }
+    if (changeEvent === undefined) throw new Error("Expected at least one change event");
+    expect(fsEventPath(changeEvent)).toBe("edit.md");
   });
 
   it("emits unlink event after deleting a file", async () => {
@@ -102,9 +106,8 @@ describe("createWatcher", () => {
     const unlinkEvents = events.filter((e) => e.type === "unlink");
     expect(unlinkEvents.length).toBeGreaterThanOrEqual(1);
     const unlinkEvent = unlinkEvents[0];
-    if (unlinkEvent.type === "add" || unlinkEvent.type === "change" || unlinkEvent.type === "unlink") {
-      expect(unlinkEvent.path).toBe("gone.md");
-    }
+    if (unlinkEvent === undefined) throw new Error("Expected at least one unlink event");
+    expect(fsEventPath(unlinkEvent)).toBe("gone.md");
   });
 
   it("does NOT emit events for files in .git/ subdir", async () => {

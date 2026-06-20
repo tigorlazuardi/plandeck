@@ -75,8 +75,10 @@ export function createWatcher(config: ResolvedConfig): Watcher {
       debounceTimers.delete(absPath);
       const relPath = path.relative(config.root, absPath).replace(/\\/g, "/");
       const basename = path.basename(absPath);
-      const kind = kindFor(basename, config) ?? undefined;
-      emit({ type, path: relPath, kind });
+      const kind = kindFor(basename, config);
+      const event: FsEvent =
+        kind !== null ? { type, path: relPath, kind } : { type, path: relPath };
+      emit(event);
     }, 150);
 
     debounceTimers.set(absPath, timer);
