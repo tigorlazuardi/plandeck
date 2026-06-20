@@ -380,6 +380,9 @@ in a directory) on `localhost`. Hardening invariants:
 - **Tests:** **`bun test`** for everything unit-level — backend (needs Bun runtime for
   `bun:sqlite`) and components (**happy-dom** + **`@testing-library/react`**). **Playwright**
   for E2E smoke (list → open doc → render a block → search). TDD per the build milestones.
+  **E2E runs in Podman** (official Playwright image, version-pinned) for host-independent,
+  portable verification — no nix/host browser coupling. See
+  `.claude/rules/playwright-podman-e2e.md`.
 
 ### Repo layout (single package)
 
