@@ -16,14 +16,7 @@ export interface ErrorCardProps {
 
 export function ErrorCard({ icon, title, detail, action }: ErrorCardProps) {
   return (
-    <Alert
-      icon={icon}
-      title={title}
-      color="red"
-      variant="light"
-      mt="md"
-      data-testid="error-card"
-    >
+    <Alert icon={icon} title={title} color="red" variant="light" mt="md" data-testid="error-card">
       {detail && (
         <Text size="sm" mt="xs">
           {detail}

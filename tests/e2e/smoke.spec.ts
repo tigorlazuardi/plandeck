@@ -15,7 +15,9 @@ test.describe("Visual Planner E2E", () => {
     // Doc navigates to /doc/plan.mdx
     await expect(page).toHaveURL(/\/doc\/plan\.mdx/);
     // Callout renders
-    await expect(page.getByText("This is an informational callout for testing.")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("This is an informational callout for testing.")).toBeVisible({
+      timeout: 10000,
+    });
     // Shiki-highlighted code block — shiki adds class "shiki" to pre
     await expect(page.locator("pre.shiki")).toBeVisible();
   });

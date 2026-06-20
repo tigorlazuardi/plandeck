@@ -19,14 +19,8 @@ interface ParseErrorCardProps {
 function ParseErrorCard({ error, path }: ParseErrorCardProps) {
   return (
     <div data-testid="parse-error-card">
-      <ErrorCard
-        icon={<AlertCircle size={16} />}
-        title="MDX Parse Error"
-        detail={error.message}
-      />
-      {path && (
-        <div style={{ fontSize: 12, marginTop: 4, fontFamily: "monospace" }}>{path}</div>
-      )}
+      <ErrorCard icon={<AlertCircle size={16} />} title="MDX Parse Error" detail={error.message} />
+      {path && <div style={{ fontSize: 12, marginTop: 4, fontFamily: "monospace" }}>{path}</div>}
     </div>
   );
 }

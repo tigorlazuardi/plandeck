@@ -88,10 +88,5 @@ export function DocView({ path }: DocViewProps) {
     return <ImageView path={path} />;
   }
 
-  return (
-    <ErrorCard
-      icon={<FileX size={16} />}
-      title={`Unsupported file type: ${kind}`}
-    />
-  );
+  return <ErrorCard icon={<FileX size={16} />} title={`Unsupported file type: ${kind}`} />;
 }
