@@ -343,6 +343,53 @@ describe("discover - other text extensions → md renderer", () => {
   });
 });
 
+describe("discover - dir/** include re-enters hidden/gitignored dirs", () => {
+  it("include: ['.github/**'] discovers files inside hidden .github dir", () => {
+    touch(".github/workflows/ci.md");
+    const tree = discover(makeConfig({ include: [".github/**"] }));
+    const allNodes = flattenTree(tree);
+    const found = allNodes.find((n) => n.name === "ci.md");
+    expect(found).toBeDefined();
+    expect(found?.path).toBe(".github/workflows/ci.md");
+  });
+
+  it("without include, .github dir is still skipped (hidden default)", () => {
+    touch(".github/workflows/ci.md");
+    const tree = discover(makeConfig());
+    const allNodes = flattenTree(tree);
+    expect(allNodes.find((n) => n.path?.includes(".github"))).toBeUndefined();
+  });
+
+  it("include: ['build/**'] discovers files inside gitignored build/ dir", () => {
+    fs.writeFileSync(path.join(tmpDir, ".gitignore"), "build/\n");
+    touch("build/out.md");
+    const tree = discover(makeConfig({ include: ["build/**"] }));
+    const allNodes = flattenTree(tree);
+    const found = allNodes.find((n) => n.name === "out.md");
+    expect(found).toBeDefined();
+    expect(found?.path).toBe("build/out.md");
+  });
+
+  it("without include, gitignored build/ is still skipped", () => {
+    fs.writeFileSync(path.join(tmpDir, ".gitignore"), "build/\n");
+    touch("build/out.md");
+    const tree = discover(makeConfig());
+    const allNodes = flattenTree(tree);
+    expect(allNodes.find((n) => n.path?.includes("build"))).toBeUndefined();
+  });
+
+  it("unrelated hidden dir stays skipped even when include targets a different dir", () => {
+    touch(".github/workflows/ci.md");
+    touch(".secret/data.md");
+    const tree = discover(makeConfig({ include: [".github/**"] }));
+    const allNodes = flattenTree(tree);
+    // .github files should be found
+    expect(allNodes.find((n) => n.path === ".github/workflows/ci.md")).toBeDefined();
+    // .secret should still be skipped
+    expect(allNodes.find((n) => n.path?.includes(".secret"))).toBeUndefined();
+  });
+});
+
 // helper: flatten tree to all nodes
 function flattenTree(nodes: ReturnType<typeof discover>): ReturnType<typeof discover> {
   const result: ReturnType<typeof discover> = [];

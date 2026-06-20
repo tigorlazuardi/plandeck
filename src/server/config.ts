@@ -9,7 +9,6 @@ const ExtListSchema = z.array(z.string().regex(/^\./, "Extensions must start wit
 
 const VpConfigFileSchema = z
   .object({
-    root: z.string().optional(),
     port: z.number().int().positive().optional(),
     host: z.string().optional(),
     title: z.string().optional(),

@@ -20,20 +20,14 @@ import { kindFor } from "./kind.ts";
  * - Dirs omitted if they have no discovered descendants
  */
 export function discover(config: ResolvedConfig): TreeNode[] {
-  const rootIgnore = ignore();
-
-  // Load root .gitignore if present
-  const rootGitignorePath = path.join(config.root, ".gitignore");
-  if (fs.existsSync(rootGitignorePath)) {
-    rootIgnore.add(fs.readFileSync(rootGitignorePath, "utf-8"));
-  }
-
-  return walkDir(config.root, config.root, rootIgnore, config);
+  // Start with an empty parent ignore; walkDir loads root's .gitignore on first call
+  return walkDir(config.root, config.root, ignore(), config);
 }
 
 /**
  * Walk a directory and return sorted TreeNode[].
- * parentIgnore: accumulated ignore matchers from ancestors (including this dir's .gitignore).
+ * Loads dirPath's own .gitignore (if present) and inherits parentIgnore from ancestors.
+ * This unified function is used for both root and all subdirectories.
  */
 function walkDir(
   dirPath: string,
@@ -41,20 +35,20 @@ function walkDir(
   parentIgnore: Ignore,
   config: ResolvedConfig,
 ): TreeNode[] {
+  // Load this dir's .gitignore (if any) — creates a scoped ignore for this subtree.
+  // This handles root on first call and every subdir on recursive calls uniformly.
+  const localIgnore = ignore();
+  localIgnore.add(parentIgnore); // inherit parent rules
+  const localGitignorePath = path.join(dirPath, ".gitignore");
+  if (fs.existsSync(localGitignorePath)) {
+    localIgnore.add(fs.readFileSync(localGitignorePath, "utf-8"));
+  }
+
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(dirPath, { withFileTypes: true });
   } catch {
     return [];
-  }
-
-  // Load this dir's .gitignore (if any) — creates a scoped ignore for this subtree
-  const localIgnore = ignore();
-  localIgnore.add(parentIgnore); // inherit parent rules
-  const localGitignorePath = path.join(dirPath, ".gitignore");
-  // Only load if it's not the root (root was already loaded)
-  if (dirPath !== root && fs.existsSync(localGitignorePath)) {
-    localIgnore.add(fs.readFileSync(localGitignorePath, "utf-8"));
   }
 
   const dirs: TreeNode[] = [];
@@ -74,19 +68,21 @@ function walkDir(
     const explicitlyIncluded = isExplicitlyIncluded(relPath, config.include);
 
     if (entry.isDirectory()) {
-      // Skip hidden dirs unless explicitly included
-      if (isHidden && !explicitlyIncluded) continue;
+      // A dir can be re-entered if any include pattern names a descendant (dir/**)
+      const includeReachesInside = includeCouldReachDir(relPath, config.include);
 
-      // Check gitignore (skip if ignored, unless explicitly included)
-      if (!explicitlyIncluded && isGitignored(localIgnore, `${relPath}/`)) continue;
+      // Skip hidden dirs unless explicitly included (by file path) OR include reaches inside
+      if (isHidden && !explicitlyIncluded && !includeReachesInside) continue;
+
+      // Check gitignore (skip if ignored, unless explicitly included or include reaches inside)
+      if (!explicitlyIncluded && !includeReachesInside && isGitignored(localIgnore, `${relPath}/`))
+        continue;
 
       // Check exclude (dir exclude prunes subtree)
       if (isExcluded(relPath, config.exclude)) continue;
 
       // Recurse — pass localIgnore (which includes this dir's .gitignore)
-      // For subdir .gitignore loading, we need to pass the accumulated ignore
-      // but load the subdir's .gitignore in the next call
-      const children = walkDirWithGitignore(absPath, root, localIgnore, config);
+      const children = walkDir(absPath, root, localIgnore, config);
 
       // Only include dir if it has discovered descendants
       if (children.length > 0) {
@@ -130,82 +126,6 @@ function walkDir(
   return [...dirs, ...files];
 }
 
-/**
- * Like walkDir but loads the subdir's .gitignore on entry.
- * This is the recursive entrypoint for subdirectories.
- */
-function walkDirWithGitignore(
-  dirPath: string,
-  root: string,
-  parentIgnore: Ignore,
-  config: ResolvedConfig,
-): TreeNode[] {
-  // Load this dir's .gitignore
-  const localIgnore = ignore();
-  localIgnore.add(parentIgnore);
-  const gitignorePath = path.join(dirPath, ".gitignore");
-  if (fs.existsSync(gitignorePath)) {
-    localIgnore.add(fs.readFileSync(gitignorePath, "utf-8"));
-  }
-
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-
-  const dirs: TreeNode[] = [];
-  const files: TreeNode[] = [];
-
-  for (const entry of entries) {
-    const absPath = path.join(dirPath, entry.name);
-    const relPath = toRelPath(root, absPath);
-
-    const stat = fs.lstatSync(absPath);
-    if (stat.isSymbolicLink()) continue;
-
-    const isHidden = entry.name.startsWith(".");
-    const explicitlyIncluded = isExplicitlyIncluded(relPath, config.include);
-
-    if (entry.isDirectory()) {
-      if (isHidden && !explicitlyIncluded) continue;
-      if (!explicitlyIncluded && isGitignored(localIgnore, `${relPath}/`)) continue;
-      if (isExcluded(relPath, config.exclude)) continue;
-
-      const children = walkDirWithGitignore(absPath, root, localIgnore, config);
-      if (children.length > 0) {
-        dirs.push({
-          name: entry.name,
-          path: relPath,
-          type: "dir",
-          children,
-        });
-      }
-    } else if (entry.isFile()) {
-      if (isHidden && !explicitlyIncluded) continue;
-      if (!explicitlyIncluded && isGitignored(localIgnore, relPath)) continue;
-      if (isExcluded(relPath, config.exclude)) continue;
-      if (config.include.length > 0 && !isIncluded(relPath, config.include)) continue;
-
-      const kind = kindFor(entry.name, config);
-      if (kind === null) continue;
-
-      files.push({
-        name: entry.name,
-        path: relPath,
-        type: "file",
-        kind,
-      });
-    }
-  }
-
-  dirs.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-  files.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-
-  return [...dirs, ...files];
-}
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Relpath from root, always using forward slashes. */
@@ -223,7 +143,7 @@ function isGitignored(ig: Ignore, relPath: string): boolean {
 }
 
 /**
- * Check if an explicit include glob matches the relpath.
+ * Check if an explicit include glob matches the relpath (for files).
  * Used to override hidden/gitignore suppression.
  */
 function isExplicitlyIncluded(relPath: string, include: string[]): boolean {
@@ -234,6 +154,36 @@ function isExplicitlyIncluded(relPath: string, include: string[]): boolean {
     } catch {
       return false;
     }
+  });
+}
+
+/**
+ * Check if any include pattern could match a descendant of the given directory.
+ * Used so hidden/gitignored DIRECTORIES are not pruned when an include glob
+ * like "dir/**" explicitly names a path inside them.
+ *
+ * Strategy: a pattern can reach inside dirRelPath if:
+ *   1. The pattern starts with dirRelPath + "/" (literal prefix), OR
+ *   2. The pattern with trailing /** stripped Glob-matches dirRelPath itself
+ *      (covers patterns like "dir/**" where stripping /** gives "dir").
+ */
+function includeCouldReachDir(dirRelPath: string, include: string[]): boolean {
+  if (include.length === 0) return false;
+  const prefix = `${dirRelPath}/`;
+  return include.some((pattern) => {
+    // Direct prefix: pattern is "dir/..." → we'd reach inside
+    if (pattern.startsWith(prefix)) return true;
+    // Strip trailing /** and check if dir matches the base
+    const stripped = pattern.replace(/\/\*\*$/, "");
+    if (stripped !== pattern) {
+      // pattern had a trailing /**
+      try {
+        if (new Bun.Glob(stripped).match(dirRelPath)) return true;
+      } catch {
+        // ignore
+      }
+    }
+    return false;
   });
 }
 

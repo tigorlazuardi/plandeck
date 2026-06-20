@@ -152,6 +152,21 @@ describe("resolveConfig - title fallback", () => {
   });
 });
 
+describe("resolveConfig - .vpconfig.json strict schema", () => {
+  it("throws a clear error when vpconfig contains unknown key 'root'", () => {
+    fs.writeFileSync(
+      path.join(tmpDir, ".vpconfig.json"),
+      JSON.stringify({ root: "/some/path", port: 4321 }),
+    );
+    expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
+  });
+
+  it("throws a clear error when vpconfig contains any unknown key", () => {
+    fs.writeFileSync(path.join(tmpDir, ".vpconfig.json"), JSON.stringify({ unknownKey: "value" }));
+    expect(() => resolveConfig({ root: tmpDir }, { env: {} })).toThrow();
+  });
+});
+
 describe("resolveConfig - final validation", () => {
   it("throws when port is <= 0", () => {
     expect(() => resolveConfig({ root: tmpDir, port: 0 }, { env: {} })).toThrow();
