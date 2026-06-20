@@ -3,12 +3,12 @@ import * as path from "node:path";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { streamSSE } from "hono/streaming";
-import type { SearchResponse, TreeResponse } from "../shared/types.ts";
+import type { DocResponse, SearchResponse, TreeResponse } from "../shared/types.ts";
 import { resolveConfig } from "./config.ts";
 import { discover } from "./discovery.ts";
 import { kindFor } from "./kind.ts";
 import { toProse } from "./prose.ts";
-import { rawHandler } from "./raw.ts";
+import { confinedResolve, rawHandler } from "./raw.ts";
 import { build } from "./search-index.ts";
 import type { SearchIndex } from "./search-index.ts";
 import { createWatcher } from "./watcher.ts";
@@ -137,6 +137,79 @@ app.get("/api/tree", (c) => {
     title: config.title,
     tree,
   };
+  return c.json(response);
+});
+
+// Document endpoint — returns DocResponse JSON for text/html kinds
+app.get("/api/doc/:relpath{.*}", async (c) => {
+  const config = resolveConfig();
+  const rawRelpath = c.req.param("relpath") ?? "";
+  const confinement = confinedResolve(config.root, rawRelpath);
+
+  if ("error" in confinement) {
+    return c.json(
+      { error: confinement.error === 403 ? "Forbidden" : "Not found" },
+      confinement.error,
+    );
+  }
+
+  const { resolved } = confinement;
+  const basename = path.basename(resolved);
+  const kind = kindFor(basename, config);
+
+  if (!kind) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  // Non-text kinds (pdf, image) have no content to serve here — raw endpoint serves bytes
+  if (kind === "pdf" || kind === "image") {
+    const response: DocResponse = { path: rawRelpath, kind };
+    return c.json(response);
+  }
+
+  // Text/html kinds — read file content
+  const file = Bun.file(resolved);
+  const size = file.size;
+
+  if (size > config.maxFileBytes) {
+    const response: DocResponse = { path: rawRelpath, kind, tooLarge: true };
+    return c.json(response);
+  }
+
+  let content: string;
+  try {
+    content = await file.text();
+  } catch {
+    const response: DocResponse = { path: rawRelpath, kind, undecodable: true };
+    return c.json(response);
+  }
+
+  // Parse frontmatter for mdx/md — simple YAML front-matter extraction (title + brief only)
+  if (kind === "mdx" || kind === "md") {
+    let body = content;
+    const frontmatter: { title?: string; brief?: string } = {};
+
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+    if (fmMatch) {
+      const yamlBlock = fmMatch[1] ?? "";
+      body = fmMatch[2] ?? "";
+      // Extract title and brief from YAML via simple regex (sufficient for known keys)
+      const titleMatch = yamlBlock.match(/^title:\s*(.+)$/m);
+      const briefMatch = yamlBlock.match(/^brief:\s*(.+)$/m);
+      if (titleMatch?.[1]) frontmatter.title = titleMatch[1].trim().replace(/^['"]|['"]$/g, "");
+      if (briefMatch?.[1]) frontmatter.brief = briefMatch[1].trim().replace(/^['"]|['"]$/g, "");
+    }
+
+    const response: DocResponse = {
+      path: rawRelpath,
+      kind,
+      frontmatter,
+      content: body,
+    };
+    return c.json(response);
+  }
+
+  const response: DocResponse = { path: rawRelpath, kind, content };
   return c.json(response);
 });
 
