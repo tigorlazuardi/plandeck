@@ -92,7 +92,9 @@ export function SearchBox() {
         >
           {loading && <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>}
           {!loading && hits.length === 0 && (
-            <div style={{ padding: "8px 12px", color: "#888" }}>No results</div>
+            <div style={{ padding: "8px 12px", color: "#888" }}>
+              No matches for &ldquo;{query}&rdquo;
+            </div>
           )}
           {!loading &&
             hits.map((hit) => (

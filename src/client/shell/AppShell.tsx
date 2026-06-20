@@ -1,4 +1,5 @@
-import { ActionIcon, AppShell, Group, Title, useMantineColorScheme } from "@mantine/core";
+import { ActionIcon, Alert, AppShell, Group, Title, useMantineColorScheme } from "@mantine/core";
+import { WifiOff } from "lucide-react";
 import { Moon, Sun } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { useTree } from "../api.ts";
@@ -38,7 +39,7 @@ interface AppLayoutProps {
 export function AppLayout({ sidebar, main }: AppLayoutProps) {
   const { data } = useTree();
   const title = data?.title ?? "Visual Planner";
-  useLiveReload();
+  const { disconnected } = useLiveReload();
 
   return (
     <AppShell
@@ -56,7 +57,20 @@ export function AppLayout({ sidebar, main }: AppLayoutProps) {
 
       <AppShell.Navbar p="md">{sidebar}</AppShell.Navbar>
 
-      <AppShell.Main>{main}</AppShell.Main>
+      <AppShell.Main>
+        {disconnected && (
+          <Alert
+            icon={<WifiOff size={16} />}
+            color="orange"
+            variant="light"
+            mb="md"
+            data-testid="disconnect-banner"
+          >
+            Live reload disconnected — reconnecting…
+          </Alert>
+        )}
+        {main}
+      </AppShell.Main>
     </AppShell>
   );
 }
