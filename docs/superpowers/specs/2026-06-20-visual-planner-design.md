@@ -444,3 +444,7 @@ Deliberately out of v1. Recorded here so they aren't lost.
 - Single-binary (`bun --compile`) packaging.
 - Container image for self-host.
 - Per-plan sibling-file bundles / multi-file plans.
+- **Frontmatter parser upgrade** — v1 parses `title`/`brief` with a regex in
+  `src/server/app.ts` (no `gray-matter` dep, despite §3 listing it). Fine for two fields;
+  swap to `gray-matter` (or `remark-frontmatter` + mdast) if richer/edge-case frontmatter
+  parsing is needed.
