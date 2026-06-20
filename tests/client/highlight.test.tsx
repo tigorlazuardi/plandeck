@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
-import { render } from "@testing-library/react";
 import { MantineProvider } from "@mantine/core";
+import { render } from "@testing-library/react";
 
 // mock mermaid so Markdown component doesn't try to run real mermaid
 mock.module("mermaid", () => ({
@@ -12,8 +12,8 @@ mock.module("mermaid", () => ({
   },
 }));
 
-import { getHighlighter } from "../../src/client/render/highlight.ts";
 import { Markdown } from "../../src/client/render/Markdown.tsx";
+import { getHighlighter } from "../../src/client/render/highlight.ts";
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <MantineProvider>{children}</MantineProvider>;

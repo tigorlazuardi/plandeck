@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
-import { render, screen, waitFor } from "@testing-library/react";
 import { MantineProvider } from "@mantine/core";
+import { render, screen, waitFor } from "@testing-library/react";
 
 // mock mermaid BEFORE importing component
 mock.module("mermaid", () => ({

@@ -9,6 +9,50 @@ mock.module("@mantine/core", () => ({
   Anchor: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
     <a {...(props as object)}>{children}</a>
   ),
+  // Stubs for components used transitively by other modules loaded in this test worker
+  MantineProvider: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TypographyStylesProvider: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  useMantineColorScheme: () => ({ colorScheme: "light" as const }),
+  UnstyledButton: ({
+    children,
+    ...props
+  }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <button type="button" {...(props as object)}>
+      {children}
+    </button>
+  ),
+  Title: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <h1 {...(props as object)}>{children}</h1>
+  ),
+  ActionIcon: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <button type="button" {...(props as object)}>
+      {children}
+    </button>
+  ),
+  ScrollArea: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <div {...(props as object)}>{children}</div>
+  ),
+  Stack: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <div {...(props as object)}>{children}</div>
+  ),
+  Group: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <div {...(props as object)}>{children}</div>
+  ),
+  Box: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <div {...(props as object)}>{children}</div>
+  ),
+  Badge: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <span {...(props as object)}>{children}</span>
+  ),
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  Loader: () => <span>loading</span>,
+  Alert: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <div {...(props as object)}>{children}</div>
+  ),
+  Code: ({ children, ...props }: { children?: React.ReactNode; [k: string]: unknown }) => (
+    <code {...(props as object)}>{children}</code>
+  ),
+  TextInput: (props: { [k: string]: unknown }) => <input {...(props as object)} />,
 }));
 
 import { HtmlView } from "../../src/client/render/HtmlView.tsx";

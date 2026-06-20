@@ -5,6 +5,7 @@ import { Component, useEffect, useState } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { components } from "../blocks/index.ts";
+import { Mermaid } from "./Mermaid.tsx";
 
 interface ParseErrorCardProps {
   error: Error;
@@ -104,9 +105,33 @@ export function Mdx({ content, path }: MdxProps) {
     return <div data-testid="mdx-loading">Loading…</div>;
   }
 
+  const mdxComponents = {
+    ...components,
+    pre(props: React.ComponentPropsWithoutRef<"pre">) {
+      const { children } = props;
+      if (
+        children &&
+        typeof children === "object" &&
+        "props" in children &&
+        children.props &&
+        typeof children.props === "object" &&
+        "className" in children.props &&
+        typeof children.props.className === "string" &&
+        children.props.className.includes("language-mermaid")
+      ) {
+        const code =
+          "children" in children.props && typeof children.props.children === "string"
+            ? children.props.children
+            : "";
+        return <Mermaid code={code} />;
+      }
+      return <pre {...props} />;
+    },
+  };
+
   return (
     <MdxErrorBoundary {...pathProp}>
-      <MDXProvider components={components}>
+      <MDXProvider components={mdxComponents}>
         <MdxComponent />
       </MDXProvider>
     </MdxErrorBoundary>
