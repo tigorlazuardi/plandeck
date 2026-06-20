@@ -16,24 +16,24 @@ visualPlanUrl:
 - 2.2 [done] FTS5 search + prose-strip + SearchBox @ merge 4feb745
 - 2.4 [done] non-text viewers + confined raw endpoint @ merge 665e76d (opus)
 - SEC [done] XSS hardening (raw active-types + snippet) @ 5d923b9, +follow-up 6e307b2 (opus-reviewed GO)
-- 2.3 [pending] deps: 2.1   orch: sonnet (highlight + mermaid)  <- DISPATCHING (wave 2b)
-- 3.1 [pending] deps: 1.1   orch: sonnet (CLI + lifecycle)
-- 3.2 [pending] deps: 2.2   orch: sonnet (live reload watcher/SSE)
+- 2.3 [done] highlight + mermaid @ 2ed6116
+- 3.1 [pending] deps: 1.1   orch: sonnet (CLI + lifecycle)  <- DISPATCHING (wave 3a)
+- 3.2 [pending] deps: 2.2   orch: sonnet (live reload watcher/SSE)  <- DISPATCHING (wave 3a)
 - 3.3 [pending] deps: all   orch: sonnet (error states + E2E)
 
 ## Waves
 - wave2a [done]: 2.1, 2.2, 2.4 (+ security hardening)
-- wave2b: [2.3]   <- now
-- wave3a: [3.1, 3.2]
+- wave2b [done]: 2.3
+- wave3a: [3.1, 3.2]   <- now
 - wave3b: [3.3]
 
 ## Integration health
-- bun run check: CLEAN. bun test: 167 pass / 0 fail. (captain-verified @ 6e307b2)
+- bun run check: CLEAN. bun test: 172 pass / 0 fail. (captain-verified post-2.3; remember `bun install` after merges)
 - Two HIGH XSS findings (raw active-types, FTS5 snippet) fixed + opus-confirmed not bypassable.
 
 ## Knowledge persisted
 - playwright-podman-e2e.md, server-config-and-discovery.md, client-conventions.md
-- raw-endpoint-and-sandbox.md (opus 2.4)
+- raw-endpoint-and-sandbox.md (opus 2.4), shiki-mermaid.md (captain, 2.3)
 - typescript-strict-gotchas.md, mdx-rendering.md, search-xss-invariant.md (captain, from 2.1/2.2 deltas + opus review)
 
 ## Learnings
