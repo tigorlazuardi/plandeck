@@ -1,0 +1,2 @@
+Plain text notes file.
+Contains the word searchable for content search testing.

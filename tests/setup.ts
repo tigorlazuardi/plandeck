@@ -1,3 +1,4 @@
+import { afterEach } from "bun:test";
 import { Window } from "happy-dom";
 
 // Install happy-dom globals so @testing-library/react can find document/window
@@ -23,3 +24,12 @@ g.requestAnimationFrame = (cb: FrameRequestCallback) =>
   happyWindow.setTimeout(() => cb(Date.now()), 0);
 g.cancelAnimationFrame = happyWindow.clearTimeout.bind(happyWindow);
 g.CSS = { supports: () => false };
+
+// Clean up DOM state between tests without calling cleanup() which breaks screen
+afterEach(() => {
+  // Empty the body to reset DOM state
+  const body = g.document.body;
+  while (body.firstChild) {
+    body.removeChild(body.firstChild);
+  }
+});

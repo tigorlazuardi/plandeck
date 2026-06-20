@@ -1,25 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Portable Playwright E2E via Podman — host-independent ("takeout"-friendly).
-# The browser lives in the official Playwright image (pinned to the SAME version as
-# the @playwright/test devDependency), NOT in any host/nix path. Any machine with
-# podman + bun can run this unchanged.
-#
-# Flow: build the client on the host (bun, fast) -> run vite-preview + playwright
-# INSIDE the container via npx (node-based; works against bun-installed node_modules).
-
+WORKTREE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PORT=4321
+FIXTURE_DIR="$WORKTREE_ROOT/tests/e2e/fixtures"
 IMAGE="mcr.microsoft.com/playwright:v1.59.1-noble"
 
-cd "$(dirname "$0")/.."
+cleanup() {
+  if [[ -n "${SERVER_PID:-}" ]]; then
+    kill "$SERVER_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
 
-# 1. Build dist/ on the host so the in-container `vite preview` serves static output.
+echo "Building dist..."
+cd "$WORKTREE_ROOT"
 bun run build
 
-# 2. Run Playwright inside the container. node_modules is mounted; the container's
-#    own browsers (image default path) match the pinned @playwright/test 1.59.1.
-exec podman run --rm \
-  -v "$PWD":/work:Z \
+echo "Starting server on port $PORT..."
+VP_PORT=$PORT VP_ROOT=$FIXTURE_DIR VP_TITLE="Visual Planner" bun "$WORKTREE_ROOT/bin/visual-planner.ts" &
+SERVER_PID=$!
+
+echo "Waiting for server..."
+for i in $(seq 1 30); do
+  if curl -sf "http://localhost:$PORT/api/tree" > /dev/null 2>&1; then
+    echo "Server ready."
+    break
+  fi
+  if [[ $i -eq 30 ]]; then
+    echo "Server did not start in time."
+    exit 1
+  fi
+  sleep 1
+done
+
+echo "Running Playwright E2E in podman..."
+podman run --rm --network host \
+  -v "$WORKTREE_ROOT":/work:Z \
   -w /work \
   "$IMAGE" \
-  npx playwright test "$@"
+  npx playwright test
