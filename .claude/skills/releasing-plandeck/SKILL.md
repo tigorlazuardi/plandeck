@@ -28,6 +28,24 @@ Bump `version` in `package.json` to match the tag before tagging. Watch it with
 `gh run watch <id> --exit-status`; verify assets with
 `gh release view vX.Y.Z --json assets`.
 
+### After every release: bump the Nix flake
+
+`flake.nix` wraps the **prebuilt release binaries** (pinned by version + sha256),
+so a new release does NOT update the flake automatically. After the release
+publishes, edit `flake.nix`:
+
+1. Set `version` to the new tag (without the `v`).
+2. Replace the three `sha256` values. They are the hex hashes in the release's
+   `SHA256SUMS.txt` — `sha256sum` hex == nix `fetchurl` hash, no conversion:
+
+```sh
+gh release download vX.Y.Z --repo tigorlazuardi/plandeck --pattern SHA256SUMS.txt --output -
+```
+
+Map `plandeck-linux-x64` → `x86_64-linux`, `plandeck-linux-arm64` →
+`aarch64-linux`, `plandeck-darwin-arm64` → `aarch64-darwin`. Then
+`nix build .#plandeck` to confirm, commit, push.
+
 ## Targets (cross-compiled from ONE host)
 
 `bun build --compile --target=<t>` cross-targets every OS/arch from a single
@@ -68,6 +86,17 @@ Rules when touching this:
 - `dist-bin/` is gitignored; never commit binaries.
 - New static asset extensions must be added to `mimeFor()` in `app.ts` or they
   ship as `application/octet-stream`.
+
+## Nix gotcha: never patchelf/strip a bun binary
+
+The same appended-payload mechanism breaks Nix packaging. `autoPatchelfHook`
+(and `strip`) rewrite the ELF, shift the trailer, and the binary silently falls
+back to the plain bun runtime (prints bun's help instead of running plandeck).
+`flake.nix` therefore keeps the binary **byte-for-byte unmodified**
+(`dontStrip`, `dontPatchELF`) and wraps it under the glibc loader via
+`makeWrapper` + `stdenv.cc.bintools.dynamicLinker --library-path …`. This runs on
+bare NixOS with no `nix-ld`. If a future change makes `nix run` print bun help,
+something started modifying the binary again.
 
 ## Verifying a binary actually works
 

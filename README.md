@@ -8,6 +8,29 @@ Local read-only doc viewer. Serve any directory of Markdown, MDX, HTML, PDF, ima
 bun install
 ```
 
+### Prebuilt binary
+
+Each release ships self-contained single-file binaries (no runtime needed) for
+linux x64/arm64, macOS arm64, and windows x64 — grab one from the
+[Releases](https://github.com/tigorlazuardi/plandeck/releases) page, `chmod +x`,
+and run it in any directory.
+
+### Nix flake
+
+Runs on bare NixOS — no `nix-ld` required (the flake wraps the release binary
+under nixpkgs' glibc loader).
+
+```sh
+# Run directly
+nix run github:tigorlazuardi/plandeck -- <dir> --port 8080
+
+# Or add to a flake
+inputs.plandeck.url = "github:tigorlazuardi/plandeck";
+# ... then `inputs.plandeck.packages.${system}.default` in your packages
+```
+
+Supported systems: `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`.
+
 ## Usage
 
 ### Development mode
