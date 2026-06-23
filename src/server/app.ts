@@ -113,8 +113,15 @@ export function createApp(config: ResolvedConfig): Hono {
       const unsub = watcher.subscribe((event) => {
         stream.writeSSE({ data: JSON.stringify(event) });
       });
+      // Heartbeat keeps the connection from idling out (Bun idleTimeout) and lets
+      // proxies/X-Accel-Buffering pass it through. Named "ping" event so the
+      // client's onmessage handler (default event only) ignores it.
+      const heartbeat = setInterval(() => {
+        stream.writeSSE({ event: "ping", data: "" });
+      }, 25_000);
       await new Promise<void>((resolve) => {
         c.req.raw.signal.addEventListener("abort", () => {
+          clearInterval(heartbeat);
           unsub();
           resolve();
         });

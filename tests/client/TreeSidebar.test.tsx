@@ -6,43 +6,38 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { TreeSidebar } from "../../src/client/shell/TreeSidebar.tsx";
 
+// Stable reference: react-query returns the same `data` object across renders,
+// so the mock must too. A fresh object per call makes Mantine Tree's
+// `initialize(data)` effect re-run every render → "Maximum update depth".
+const MOCK_TREE = {
+  data: {
+    root: "/docs",
+    title: "Test Docs",
+    tree: [
+      { name: "foo.md", path: "foo.md", type: "file", kind: "md" },
+      { name: "bar.md", path: "bar.md", type: "file", kind: "md" },
+      {
+        name: "subdir",
+        path: "subdir",
+        type: "dir",
+        children: [
+          {
+            name: "foobar.md",
+            path: "subdir/foobar.md",
+            type: "file",
+            kind: "md",
+          },
+        ],
+      },
+    ],
+  },
+  isLoading: false,
+  isError: false,
+} as const;
+
 // Mock the api module
 mock.module("../../src/client/api.ts", () => ({
-  useTree: () => ({
-    data: {
-      root: "/docs",
-      title: "Test Docs",
-      tree: [
-        {
-          name: "foo.md",
-          path: "foo.md",
-          type: "file",
-          kind: "md",
-        },
-        {
-          name: "bar.md",
-          path: "bar.md",
-          type: "file",
-          kind: "md",
-        },
-        {
-          name: "subdir",
-          path: "subdir",
-          type: "dir",
-          children: [
-            {
-              name: "foobar.md",
-              path: "subdir/foobar.md",
-              type: "file",
-              kind: "md",
-            },
-          ],
-        },
-      ],
-    },
-    isLoading: false,
-    isError: false,
-  }),
+  useTree: () => MOCK_TREE,
   fetchTree: () => Promise.resolve({ root: "/", title: "Test", tree: [] }),
   fetchDoc: () => Promise.resolve({ path: "", kind: "md" }),
   useDoc: () => ({ data: undefined, isLoading: false, isError: false }),
@@ -72,6 +67,19 @@ describe("TreeSidebar", () => {
     });
     expect(screen.getByText("foo.md")).toBeTruthy();
     expect(screen.getByText("bar.md")).toBeTruthy();
+  });
+
+  it("groups files under their directory", async () => {
+    await act(async () => {
+      render(
+        <Wrapper>
+          <TreeSidebar />
+        </Wrapper>,
+      );
+    });
+    // The directory node is shown and its child is nested (expanded by default).
+    expect(screen.getByText("subdir")).toBeTruthy();
+    expect(screen.getByText("foobar.md")).toBeTruthy();
   });
 
   it("filter narrows results - type foo shows only foo nodes", async () => {

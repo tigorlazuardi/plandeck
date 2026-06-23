@@ -26,6 +26,15 @@
     }
   },
   "files": {
-    "ignore": ["dist", "node_modules", ".git", "test-results", "playwright-report", "coverage"]
+    "ignore": [
+      "dist",
+      "dist-bin",
+      "node_modules",
+      ".git",
+      "test-results",
+      "playwright-report",
+      "coverage",
+      "website"
+    ]
   }
 }

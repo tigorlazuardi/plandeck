@@ -13,10 +13,18 @@ Durable patterns established in slice 1.2 (client shell + tree + render).
 - All types come from `src/shared/types.ts` (frozen contract). Do not redefine.
 
 ## Tree sidebar
-- `TreeSidebar` uses `flattenFiles()` + a filter input + a flat `UnstyledButton` list —
-  NOT the Mantine `Tree` component (its renderNode wiring is heavy; flat is simpler +
-  testable). A later slice may add real hierarchy; keep `flattenFiles` as the seam.
-- `matchesFilter` is case-insensitive substring on `node.name` OR `node.path`.
+- `TreeSidebar` renders the **Mantine `Tree`** component (hierarchical, grouped by
+  directory) fed from the nested `TreeNode[]` via `toTreeData()`. Files navigate to
+  `/doc/${value}`; directories toggle expand. Long names truncate (ellipsis + `title`).
+- `pruneTree(nodes, needle)` is the filter: keeps files whose `name`/`path` contains the
+  (lowercased) needle plus the directories leading to them; empty needle = whole tree.
+  Expanded state is seeded with `getTreeExpandedState(data, "*")` (expand-all) so grouping
+  is visible and filter matches are revealed.
+- ⚠️ Mantine `Tree` runs `useEffect(() => controller.initialize(data), [data])`. If the
+  `data` array identity changes every render it loops ("Maximum update depth"). Keep
+  `treeData` memoized (`useMemo` on `[sourceFiles, needle]`) and ensure any **test mock of
+  `useTree`** returns a STABLE object reference (react-query already does) — a fresh object
+  per call triggers the loop.
 
 ## Theme (Mantine color scheme)
 - To avoid FOUC, initialize `MantineProvider` with `defaultColorScheme` read from

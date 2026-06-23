@@ -36,6 +36,10 @@ export async function startServer(
       server = Bun.serve({
         hostname: config.host,
         port: tryPort,
+        // Raise from Bun's 10s default: the /api/events SSE stream is long-lived
+        // and idle between file changes. 255 is Bun's max; the SSE heartbeat
+        // (every 25s) keeps the socket active well within it.
+        idleTimeout: 255,
         fetch: createApp(config).fetch,
       });
       actualPort = server.port ?? tryPort;
