@@ -1,82 +1,163 @@
-import { Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  type RenderTreeNodePayload,
+  Stack,
+  Text,
+  TextInput,
+  Tree,
+  type TreeNodeData,
+  getTreeExpandedState,
+  useTree as useMantineTree,
+} from "@mantine/core";
+import { ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import type { TreeNode } from "../../shared/types.ts";
 import { useTree } from "../api.ts";
 import { TreeSkeleton } from "./LoadingSkeleton.tsx";
 
-function flattenFiles(nodes: TreeNode[]): TreeNode[] {
-  const result: TreeNode[] = [];
+// Prune the source tree to files matching the filter, keeping the directories
+// that lead to them. Empty filter returns the tree unchanged.
+function pruneTree(nodes: TreeNode[], needle: string): TreeNode[] {
+  if (!needle) return nodes;
+  const out: TreeNode[] = [];
   for (const node of nodes) {
     if (node.type === "file") {
-      result.push(node);
+      if (node.name.toLowerCase().includes(needle) || node.path.toLowerCase().includes(needle)) {
+        out.push(node);
+      }
     } else if (node.children) {
-      result.push(...flattenFiles(node.children));
+      const kids = pruneTree(node.children, needle);
+      if (kids.length > 0) out.push({ ...node, children: kids });
     }
   }
-  return result;
+  return out;
 }
 
-function matchesFilter(node: TreeNode, filter: string): boolean {
-  if (!filter) return true;
-  const lower = filter.toLowerCase();
-  return node.name.toLowerCase().includes(lower) || node.path.toLowerCase().includes(lower);
-}
-
-interface FileNodeButtonProps {
-  node: TreeNode;
-}
-
-function FileNodeButton({ node }: FileNodeButtonProps) {
-  const navigate = useNavigate();
-  return (
-    <UnstyledButton
-      onClick={() => navigate(`/doc/${node.path}`)}
-      style={{
-        display: "block",
-        width: "100%",
-        padding: "4px 8px",
-        borderRadius: 4,
-        fontSize: 13,
-        cursor: "pointer",
-      }}
-    >
-      {node.name}
-    </UnstyledButton>
-  );
+// Map our nested TreeNode[] onto Mantine's TreeNodeData[]. `value` is the
+// '/'-normalized relpath, which is also the doc route param.
+function toTreeData(nodes: TreeNode[]): TreeNodeData[] {
+  return nodes.map((node) => {
+    const childProp = node.children ? { children: toTreeData(node.children) } : {};
+    return {
+      value: node.path,
+      label: node.name,
+      nodeProps: { type: node.type, kind: node.kind },
+      ...childProp,
+    };
+  });
 }
 
 export function TreeSidebar() {
   const { data, isLoading } = useTree();
   const [filter, setFilter] = useState("");
+  const navigate = useNavigate();
+  const params = useParams<{ "*": string }>();
+  const activePath = params["*"] ?? "";
+
+  const needle = filter.trim().toLowerCase();
+  const sourceFiles = data?.tree ?? [];
+  const treeData = useMemo(() => toTreeData(pruneTree(sourceFiles, needle)), [sourceFiles, needle]);
+
+  // Expand everything: when filtering so matches are visible, and by default so
+  // the directory grouping is apparent.
+  const mantineTree = useMantineTree({
+    initialExpandedState: getTreeExpandedState(treeData, "*"),
+  });
+
+  function renderNode({ node, expanded, elementProps }: RenderTreeNodePayload) {
+    const isDir = node.nodeProps?.type === "dir";
+    const isActive = !isDir && node.value === activePath;
+    return (
+      <div
+        {...elementProps}
+        onClick={(event) => {
+          if (isDir) {
+            mantineTree.toggleExpanded(node.value);
+          } else {
+            navigate(`/doc/${node.value}`);
+          }
+          elementProps.onClick?.(event);
+        }}
+        style={{
+          ...elementProps.style,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          minWidth: 0,
+          padding: "3px 6px",
+          borderRadius: 4,
+          fontSize: 13,
+          cursor: "pointer",
+          fontWeight: isActive ? 600 : 400,
+          background: isActive ? "var(--mantine-color-default-hover)" : undefined,
+        }}
+      >
+        {isDir ? (
+          <ChevronRight
+            size={14}
+            style={{
+              flexShrink: 0,
+              transition: "transform 120ms",
+              transform: expanded ? "rotate(90deg)" : "none",
+            }}
+          />
+        ) : (
+          <span style={{ width: 14, flexShrink: 0 }} />
+        )}
+        {isDir ? (
+          expanded ? (
+            <FolderOpen size={14} style={{ flexShrink: 0 }} />
+          ) : (
+            <Folder size={14} style={{ flexShrink: 0 }} />
+          )
+        ) : (
+          <FileText size={14} style={{ flexShrink: 0 }} />
+        )}
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={node.value}
+        >
+          {node.label}
+        </span>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <TreeSkeleton />;
   }
 
-  const allFiles = flattenFiles(data?.tree ?? []);
-  const filtered = allFiles.filter((node) => matchesFilter(node, filter));
   const root = data?.root ?? "";
 
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" style={{ minWidth: 0 }}>
       <TextInput
         placeholder="Filter files..."
         value={filter}
         onChange={(e) => setFilter(e.currentTarget.value)}
         size="xs"
       />
-      {allFiles.length === 0 && !filter ? (
+      {sourceFiles.length === 0 && !needle ? (
         <Text c="dimmed" size="xs" data-testid="no-docs-empty">
           No docs found under {root ? `"${root}"` : "the configured root"} — check{" "}
           <code>.plandeck.json</code> include/exclude, or that files aren&apos;t hidden/gitignored.
         </Text>
-      ) : filtered.length === 0 ? (
+      ) : treeData.length === 0 ? (
         <Text c="dimmed" size="sm">
           No docs match &ldquo;{filter}&rdquo;
         </Text>
       ) : (
-        filtered.map((node) => <FileNodeButton key={node.path} node={node} />)
+        <Tree
+          data={treeData}
+          tree={mantineTree}
+          levelOffset={16}
+          renderNode={renderNode}
+          style={{ fontSize: 13 }}
+        />
       )}
     </Stack>
   );
