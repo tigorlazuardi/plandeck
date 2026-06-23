@@ -1,0 +1,37 @@
+---
+title: Plandeck
+description: Local, read-only viewer for a directory of Markdown, MDX, HTML, PDF, image, and text docs — searchable, with live reload.
+template: splash
+hero:
+  tagline: Point it at a folder of docs. Get a searchable, live-reloading site. One self-contained binary — no account, no database, no network egress.
+  actions:
+    - text: Getting Started
+      link: /plandeck/guide/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: ⚡ Quick start for LLMs (llms.txt)
+      link: /plandeck/llms.txt
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="Single binary" icon="rocket">
+		Self-contained executables for Linux, macOS, and Windows. The web UI is
+		baked into the binary — run it in any directory.
+	</Card>
+	<Card title="Renders plan docs" icon="open-book">
+		Markdown, MDX (with custom blocks), HTML, PDF, images, and plain text —
+		all browsable in one searchable sidebar.
+	</Card>
+	<Card title="Local & private" icon="approve-check">
+		Binds to localhost, follows `.gitignore`, never phones home. The
+		filesystem is the only source of truth.
+	</Card>
+	<Card title="Agent-native" icon="puzzle">
+		An agent writes the docs, a human reads them. Feed an LLM the
+		[llms.txt](/plandeck/llms.txt) for an instant, scoped overview.
+	</Card>
+</CardGrid>
