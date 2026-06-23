@@ -2,6 +2,8 @@
 
 Local read-only doc viewer. Serve any directory of Markdown, MDX, HTML, PDF, images, and plain text files as a searchable web app with live reload.
 
+📖 **Documentation:** <https://tigorlazuardi.github.io/plandeck/> — guides, configuration, MDX blocks, and an [`llms.txt`](https://tigorlazuardi.github.io/plandeck/llms.txt) for driving Plandeck with an AI agent.
+
 ## Install
 
 ```sh
