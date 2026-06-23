@@ -1,0 +1,5 @@
+# Astro / Starlight build output + caches
+dist/
+.astro/
+node_modules/
+.DS_Store
