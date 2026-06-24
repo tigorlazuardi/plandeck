@@ -16,10 +16,30 @@ interface ParseErrorCardProps {
   path?: string;
 }
 
+// MDX treats every `{...}` in content as a JavaScript expression — even inside
+// raw <pre>/<code> JSX — so literal braces (logs, JSON, Pydantic reprs) make
+// acorn fail to parse. Surface a concrete fix when that's the likely cause.
+export function bracesHint(message: string): string | null {
+  if (/acorn|parse expression|Unexpected character|expression/i.test(message)) {
+    return (
+      "This usually means the document has literal { or } that MDX tried to read as a " +
+      "JavaScript expression. Put such content (logs, JSON, code) in a fenced code block " +
+      "(```), or escape the braces as \\{ and \\}."
+    );
+  }
+  return null;
+}
+
 function ParseErrorCard({ error, path }: ParseErrorCardProps) {
+  const hint = bracesHint(error.message);
   return (
     <div data-testid="parse-error-card">
       <ErrorCard icon={<AlertCircle size={16} />} title="MDX Parse Error" detail={error.message} />
+      {hint && (
+        <div data-testid="parse-error-hint" style={{ fontSize: 13, marginTop: 8 }}>
+          {hint}
+        </div>
+      )}
       {path && <div style={{ fontSize: 12, marginTop: 4, fontFamily: "monospace" }}>{path}</div>}
     </div>
   );
