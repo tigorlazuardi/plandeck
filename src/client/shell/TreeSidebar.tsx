@@ -5,11 +5,10 @@ import {
   TextInput,
   Tree,
   type TreeNodeData,
-  getTreeExpandedState,
   useTree as useMantineTree,
 } from "@mantine/core";
 import { ChevronRight, FileText, Folder, FolderOpen } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { TreeNode } from "../../shared/types.ts";
 import { useTree } from "../api.ts";
@@ -58,11 +57,15 @@ export function TreeSidebar() {
   const sourceFiles = data?.tree ?? [];
   const treeData = useMemo(() => toTreeData(pruneTree(sourceFiles, needle)), [sourceFiles, needle]);
 
-  // Expand everything: when filtering so matches are visible, and by default so
-  // the directory grouping is apparent.
-  const mantineTree = useMantineTree({
-    initialExpandedState: getTreeExpandedState(treeData, "*"),
-  });
+  // Directories are collapsed by default. When a filter is active, expand
+  // everything so matching files (which may be nested) are actually visible.
+  const mantineTree = useMantineTree();
+  // `mantineTree` is a fresh object each render, so it's intentionally NOT a dep
+  // (including it re-runs the effect every render → expandAllNodes loop).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  useEffect(() => {
+    if (needle) mantineTree.expandAllNodes();
+  }, [needle, treeData]);
 
   function renderNode({ node, expanded, elementProps }: RenderTreeNodePayload) {
     const isDir = node.nodeProps?.type === "dir";
@@ -70,13 +73,14 @@ export function TreeSidebar() {
     return (
       <div
         {...elementProps}
-        onClick={(event) => {
+        // Own the click fully — calling Mantine's elementProps.onClick here too
+        // would double-toggle (expandOnClick) and the folder would never open.
+        onClick={() => {
           if (isDir) {
             mantineTree.toggleExpanded(node.value);
           } else {
             navigate(`/doc/${node.value}`);
           }
-          elementProps.onClick?.(event);
         }}
         style={{
           ...elementProps.style,
@@ -155,6 +159,7 @@ export function TreeSidebar() {
           data={treeData}
           tree={mantineTree}
           levelOffset={16}
+          expandOnClick={false}
           renderNode={renderNode}
           style={{ fontSize: 13 }}
         />
