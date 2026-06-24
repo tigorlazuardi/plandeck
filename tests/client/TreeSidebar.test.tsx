@@ -69,7 +69,7 @@ describe("TreeSidebar", () => {
     expect(screen.getByText("bar.md")).toBeTruthy();
   });
 
-  it("groups files under their directory", async () => {
+  it("groups files under a directory that expands on click", async () => {
     await act(async () => {
       render(
         <Wrapper>
@@ -77,8 +77,15 @@ describe("TreeSidebar", () => {
         </Wrapper>,
       );
     });
-    // The directory node is shown and its child is nested (expanded by default).
+    // Directory shown, but collapsed by default — its child is not rendered yet.
     expect(screen.getByText("subdir")).toBeTruthy();
+    expect(screen.queryByText("foobar.md")).toBeNull();
+
+    // Clicking the directory expands it (regression: a double-toggle once made
+    // this a no-op).
+    await act(async () => {
+      await userEvent.click(screen.getByText("subdir"));
+    });
     expect(screen.getByText("foobar.md")).toBeTruthy();
   });
 

@@ -18,13 +18,19 @@ Durable patterns established in slice 1.2 (client shell + tree + render).
   `/doc/${value}`; directories toggle expand. Long names truncate (ellipsis + `title`).
 - `pruneTree(nodes, needle)` is the filter: keeps files whose `name`/`path` contains the
   (lowercased) needle plus the directories leading to them; empty needle = whole tree.
-  Expanded state is seeded with `getTreeExpandedState(data, "*")` (expand-all) so grouping
-  is visible and filter matches are revealed.
-- ⚠️ Mantine `Tree` runs `useEffect(() => controller.initialize(data), [data])`. If the
-  `data` array identity changes every render it loops ("Maximum update depth"). Keep
-  `treeData` memoized (`useMemo` on `[sourceFiles, needle]`) and ensure any **test mock of
-  `useTree`** returns a STABLE object reference (react-query already does) — a fresh object
-  per call triggers the loop.
+- Directories are **collapsed by default**; an effect calls `mantineTree.expandAllNodes()`
+  only when a filter is active (so nested matches are visible). Do NOT seed
+  `getTreeExpandedState(treeData, "*")` at mount — `treeData` is `[]` while the query loads,
+  so the seed is empty anyway.
+- ⚠️ `renderNode` must OWN the click: `Tree` has `expandOnClick={false}` and the node's
+  `onClick` does `toggleExpanded` (dir) / `navigate` (file). Do NOT also call
+  `elementProps.onClick` — that re-toggles and the folder never opens (real bug).
+- ⚠️ Two infinite-loop traps with Mantine `Tree`:
+  1. `useEffect(() => controller.initialize(data), [data])` loops if `data` identity changes
+     every render — keep `treeData` memoized and make any **test mock of `useTree`** return a
+     STABLE object (react-query already does).
+  2. The controller from `useMantineTree()` is a fresh object each render — do NOT put it in a
+     `useEffect` dep array (it would re-run `expandAllNodes` every render).
 
 ## Theme (Mantine color scheme)
 - To avoid FOUC, initialize `MantineProvider` with `defaultColorScheme` read from
