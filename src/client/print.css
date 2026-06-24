@@ -1,0 +1,39 @@
+/* Print / Save-as-PDF stylesheet: strip the app chrome, leave only the document. */
+@media print {
+  .mantine-AppShell-header,
+  .mantine-AppShell-navbar,
+  .vp-no-print,
+  [data-testid="disconnect-banner"] {
+    display: none !important;
+  }
+
+  .mantine-AppShell-main {
+    padding: 0 !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Keep these blocks from splitting awkwardly across pages. */
+  pre,
+  table,
+  img,
+  blockquote,
+  svg {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
