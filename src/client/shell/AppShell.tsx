@@ -55,7 +55,9 @@ export function AppLayout({ sidebar, main }: AppLayoutProps) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">{sidebar}</AppShell.Navbar>
+      <AppShell.Navbar p="md" style={{ overflowY: "auto" }}>
+        {sidebar}
+      </AppShell.Navbar>
 
       <AppShell.Main>
         {disconnected && (

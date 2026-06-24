@@ -88,7 +88,10 @@ export function TreeSidebar() {
           alignItems: "center",
           gap: 6,
           minWidth: 0,
-          padding: "3px 6px",
+          // NOTE: do NOT set the `padding` shorthand — it would clobber Mantine's
+          // `padding-inline-start: var(--label-offset)` that indents nested nodes.
+          paddingBlock: 3,
+          paddingInlineEnd: 6,
           borderRadius: 4,
           fontSize: 13,
           cursor: "pointer",
