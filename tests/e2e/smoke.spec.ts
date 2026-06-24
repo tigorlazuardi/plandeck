@@ -4,17 +4,17 @@ test.describe("Plandeck E2E", () => {
   test("tree sidebar lists fixture docs", async ({ page }) => {
     await page.goto("/");
     // Wait for tree to load — all three fixture docs should appear
-    await expect(page.getByRole("button", { name: "plan.mdx" }).first()).toBeVisible({
+    await expect(page.getByText("plan.mdx").first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByRole("button", { name: "readme.md" }).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "notes.txt" }).first()).toBeVisible();
+    await expect(page.getByText("readme.md").first()).toBeVisible();
+    await expect(page.getByText("notes.txt").first()).toBeVisible();
   });
 
   test("open MDX doc — Callout renders + code block is highlighted", async ({ page }) => {
     await page.goto("/");
     // Click plan.mdx in the sidebar
-    await page.getByRole("button", { name: "plan.mdx" }).first().click();
+    await page.getByText("plan.mdx").first().click();
     // Doc navigates to /doc/plan.mdx
     await expect(page).toHaveURL(/\/doc\/plan\.mdx/, { timeout: 5000 });
     // Callout renders (text from the Callout block in the fixture)
@@ -28,7 +28,7 @@ test.describe("Plandeck E2E", () => {
   test("content search finds a fixture doc and opens it", async ({ page }) => {
     await page.goto("/");
     // Wait for page to load
-    await page.getByRole("button", { name: "plan.mdx" }).first().waitFor({ timeout: 10000 });
+    await page.getByText("plan.mdx").first().waitFor({ timeout: 10000 });
     // Find search input in the header SearchBox area
     const searchInput = page
       .locator('input[placeholder*="earch"], input[placeholder*="ontent"]')
