@@ -15,7 +15,8 @@
     "build:binary": "bun run build && bun run gen:embedded && bun scripts/compile.ts && git checkout -- src/server/embedded-assets.ts",
     "check": "biome check . && tsc --noEmit",
     "test": "bun test",
-    "e2e": "bash scripts/e2e.sh"
+    "e2e": "bash scripts/e2e.sh",
+    "visual": "bash scripts/visual.sh"
   },
   "dependencies": {
     "@mantine/core": "^7.17.0",
