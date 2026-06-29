@@ -8,20 +8,20 @@
     let
       # Bump `version` and all three sha256 on every release — they come from the
       # GitHub Release `SHA256SUMS.txt` (sha256sum hex == nix fetchurl hash).
-      version = "0.1.3";
+      version = "0.1.4";
 
       assets = {
         "x86_64-linux" = {
           file = "plandeck-linux-x64";
-          sha256 = "3f8c3a5050359f5ebe6b397a4397821a1bbb49052a904be6b9797acdcf334879";
+          sha256 = "9c715b170208f808a047dd8d036b7151f7ecce8c5fc34556d0df1b6b09831aa5";
         };
         "aarch64-linux" = {
           file = "plandeck-linux-arm64";
-          sha256 = "9b5ef78e14089b93fb3a58053efdafb48fcf6e293d9f72bf312cbca8f12ba3b4";
+          sha256 = "d601b2c4f152135076db2325ff0e9dd80e1ebc866188a4aaf0d599c5e04d9655";
         };
         "aarch64-darwin" = {
           file = "plandeck-darwin-arm64";
-          sha256 = "0e76c68e05eb3a398b10c64351ce192670bcef2dbb96565463f3119ab8ee8da0";
+          sha256 = "b94a7a49ea6f67e82f31e9d0bf75dfc64ff4ec685e3f7bf5d41da9be27c73c6f";
         };
       };
 
