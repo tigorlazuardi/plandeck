@@ -1,4 +1,4 @@
-import { Button, Group, Menu, Switch, Tooltip } from "@mantine/core";
+import { Button, Group, Menu, Paper, Switch, Tooltip } from "@mantine/core";
 import { FileDown, Printer, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { printHtmlDoc } from "../export.ts";
@@ -40,44 +40,48 @@ export function HtmlView({ html }: HtmlViewProps) {
 
   return (
     <div style={{ position: "relative" }}>
-      <Group
+      <Paper
         className="vp-no-print"
-        gap="sm"
-        align="center"
+        withBorder
+        shadow="sm"
+        radius="md"
+        p={6}
         style={{ position: "absolute", top: 8, right: 8, zIndex: 5 }}
       >
-        <Tooltip
-          multiline
-          w={260}
-          withArrow
-          label="Lets this document run its own JavaScript. Only enable for files you trust — a malicious script can run arbitrary code and make network requests (but cannot read this app's data or cookies)."
-        >
-          <Switch
-            size="xs"
-            color="red"
-            checked={scriptsEnabled}
-            onChange={(e) => setScriptsEnabled(e.currentTarget.checked)}
-            label={
-              <Group gap={4} align="center" wrap="nowrap">
-                <TriangleAlert size={12} color="var(--mantine-color-red-6)" />
-                <span>Enable scripts</span>
-              </Group>
-            }
-          />
-        </Tooltip>
-        <Menu position="bottom-end" withinPortal shadow="md">
-          <Menu.Target>
-            <Button size="xs" variant="default" leftSection={<FileDown size={14} />}>
-              Export
-            </Button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item leftSection={<Printer size={14} />} onClick={() => printHtmlDoc(html)}>
-              Print / Save as PDF
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
+        <Group gap="sm" align="center" wrap="nowrap">
+          <Tooltip
+            multiline
+            w={260}
+            withArrow
+            label="Lets this document run its own JavaScript. Only enable for files you trust — a malicious script can run arbitrary code and make network requests (but cannot read this app's data or cookies)."
+          >
+            <Switch
+              size="xs"
+              color="red"
+              checked={scriptsEnabled}
+              onChange={(e) => setScriptsEnabled(e.currentTarget.checked)}
+              label={
+                <Group gap={4} align="center" wrap="nowrap" c="red.6">
+                  <TriangleAlert size={12} />
+                  <span>Enable scripts</span>
+                </Group>
+              }
+            />
+          </Tooltip>
+          <Menu position="bottom-end" withinPortal shadow="md">
+            <Menu.Target>
+              <Button size="xs" variant="default" leftSection={<FileDown size={14} />}>
+                Export
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<Printer size={14} />} onClick={() => printHtmlDoc(html)}>
+                Print / Save as PDF
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Paper>
       <iframe
         // Changing the sandbox needs a fresh load to take effect — re-mount the
         // iframe by keying it on the active sandbox value.
