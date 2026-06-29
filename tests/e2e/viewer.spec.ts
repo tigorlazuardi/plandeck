@@ -14,4 +14,13 @@ test.describe("Document viewers", () => {
     const box = await frame.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThan(500);
   });
+
+  test("html doc has an Export → Print / Save as PDF action", async ({ page }) => {
+    await page.goto("/");
+    await page.getByText("preview.html").first().click();
+    await expect(page).toHaveURL(/preview\.html/, { timeout: 10000 });
+
+    await page.getByRole("button", { name: "Export" }).click();
+    await expect(page.getByText("Print / Save as PDF")).toBeVisible();
+  });
 });

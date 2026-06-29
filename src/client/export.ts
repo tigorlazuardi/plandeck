@@ -114,6 +114,38 @@ export function printDoc(): void {
   window.print();
 }
 
+/**
+ * Print a standalone HTML document (an `.html` doc rendered in HtmlView) to PDF.
+ *
+ * The inline preview iframe is fully sandboxed (no allow-same-origin, no
+ * allow-scripts) and can't be reached to print. So we build a transient,
+ * off-screen iframe with `allow-same-origin allow-modals` but STILL NO
+ * `allow-scripts` — the document's own JS stays inert; only the parent reaches in
+ * to call `print()` on it. The browser paginates the full document.
+ */
+export function printHtmlDoc(html: string): void {
+  const iframe = document.createElement("iframe");
+  // SECURITY: never add allow-scripts here — the doc must stay inert.
+  iframe.setAttribute("sandbox", "allow-same-origin allow-modals");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
+  iframe.style.border = "none";
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.srcdoc = html;
+  iframe.onload = () => {
+    const win = iframe.contentWindow;
+    if (win) {
+      win.focus();
+      win.print();
+    }
+    setTimeout(() => iframe.remove(), 1000);
+  };
+  document.body.appendChild(iframe);
+}
+
 // Force a light color scheme while printing so dark-mode docs don't waste ink or
 // render light text on white paper. Restores the user's scheme afterward.
 export function setupPrintLightMode(): () => void {
