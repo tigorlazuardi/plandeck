@@ -53,9 +53,22 @@ and `Bun.file(resolved)` open. Real hardening is open-fd-then-fstat; out of scop
 
 - Render untrusted doc HTML via `<iframe srcDoc={html}>` (React camelCase `srcDoc`;
   DOM attr is `srcdoc`). NEVER `src` pointing at the app origin.
-- `sandbox` value MUST contain neither `allow-scripts` NOR `allow-same-origin`. Current
-  set: `"allow-forms allow-popups"` — JS can't run, can't reach app origin/cookies/storage.
-- Tests assert the ABSENCE of both dangerous tokens, not mere presence of the attr.
+- Default `sandbox` MUST contain neither `allow-scripts` NOR `allow-same-origin`. Inert
+  set: `"allow-forms allow-popups"` (`SANDBOX_INERT`) — JS can't run, can't reach app
+  origin/cookies/storage.
+- Tests assert the ABSENCE of both dangerous tokens in the default, not mere presence.
+
+### Per-file "Enable scripts" opt-in (`SANDBOX_SCRIPTS`)
+A per-file toggle (default OFF, re-armed to OFF on every doc change via `useEffect([html])`)
+can switch the sandbox to `"allow-forms allow-popups allow-scripts"` — **adds `allow-scripts`
+ONLY, NEVER `allow-same-origin`.** Safe because the frame stays cross/null-origin: scripts
+run but cannot read the app's cookies/storage/DOM and cannot strip their own sandbox (that
+needs `allow-scripts` AND `allow-same-origin` together). Scripts CAN run arbitrary JS + hit
+the network, so the toggle carries an explicit warning (red, `TriangleAlert`). Changing the
+sandbox needs an iframe re-mount → key the iframe on the sandbox value. A test asserts that
+enabling the toggle adds `allow-scripts` but the sandbox still never contains
+`allow-same-origin`. The two allowed values are the `SANDBOX_INERT` / `SANDBOX_SCRIPTS`
+constants — do NOT inline other combinations.
 
 ### Print-to-PDF exception (`printHtmlDoc` in `export.ts`)
 The inline preview iframe is unreachable for printing (no `allow-same-origin`). To
