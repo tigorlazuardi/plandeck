@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { MantineProvider } from "@mantine/core";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { HtmlView } from "../../src/client/render/HtmlView.tsx";
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -60,6 +60,26 @@ describe("HtmlView", () => {
     );
     const iframe = container.querySelector("iframe");
     const sandbox = iframe?.getAttribute("sandbox") ?? "";
+    expect(sandbox).not.toContain("allow-same-origin");
+  });
+
+  it("enabling the scripts toggle adds allow-scripts but NEVER allow-same-origin", () => {
+    const { container, getByRole } = render(
+      <Wrapper>
+        <HtmlView html="<b>x</b>" />
+      </Wrapper>,
+    );
+    // Default is inert.
+    expect(container.querySelector("iframe")?.getAttribute("sandbox")).not.toContain(
+      "allow-scripts",
+    );
+
+    fireEvent.click(getByRole("switch"));
+
+    const sandbox = container.querySelector("iframe")?.getAttribute("sandbox") ?? "";
+    expect(sandbox).toContain("allow-scripts");
+    // SECURITY: scripts may run, but the frame must stay cross-origin so it can't
+    // reach the app or strip its own sandbox.
     expect(sandbox).not.toContain("allow-same-origin");
   });
 
