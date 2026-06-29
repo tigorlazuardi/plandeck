@@ -57,6 +57,15 @@ and `Bun.file(resolved)` open. Real hardening is open-fd-then-fstat; out of scop
   set: `"allow-forms allow-popups"` — JS can't run, can't reach app origin/cookies/storage.
 - Tests assert the ABSENCE of both dangerous tokens, not mere presence of the attr.
 
+### Print-to-PDF exception (`printHtmlDoc` in `export.ts`)
+The inline preview iframe is unreachable for printing (no `allow-same-origin`). To
+"Print / Save as PDF" an `.html` doc, `printHtmlDoc` builds a **transient, off-screen**
+iframe with `sandbox="allow-same-origin allow-modals"`, then calls
+`iframe.contentWindow.print()`. Safe ONLY because it STILL omits `allow-scripts` — the
+document's own JS stays inert; `allow-same-origin` merely lets the parent reach in to call
+`print()`. **NEVER add `allow-scripts` to this iframe.** A test asserts the print iframe's
+sandbox contains `allow-same-origin` but never `allow-scripts`.
+
 ## Non-text viewers
 
 - `PdfView` / `ImageView` build `src={`/api/raw/${path}`}` — confinement enforced

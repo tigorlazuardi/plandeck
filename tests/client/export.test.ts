@@ -1,5 +1,11 @@
 import { describe, expect, it, mock } from "bun:test";
-import { buildDocHtml, escapeHtml, printDoc, slugify } from "../../src/client/export.ts";
+import {
+  buildDocHtml,
+  escapeHtml,
+  printDoc,
+  printHtmlDoc,
+  slugify,
+} from "../../src/client/export.ts";
 
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {
@@ -52,5 +58,20 @@ describe("printDoc", () => {
     window.print = spy;
     printDoc();
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("printHtmlDoc", () => {
+  it("uses a transient iframe whose sandbox never allows scripts", () => {
+    printHtmlDoc("<p>hi</p>");
+    const frames = Array.from(document.querySelectorAll("iframe"));
+    const printFrame = frames.find((f) => f.getAttribute("aria-hidden") === "true");
+    expect(printFrame).toBeTruthy();
+    const sandbox = printFrame?.getAttribute("sandbox") ?? "";
+    // SECURITY: same-origin lets the parent call print(), but scripts stay off.
+    expect(sandbox).toContain("allow-same-origin");
+    expect(sandbox).not.toContain("allow-scripts");
+    expect(printFrame?.getAttribute("srcdoc")).toBe("<p>hi</p>");
+    printFrame?.remove();
   });
 });
