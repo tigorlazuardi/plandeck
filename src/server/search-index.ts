@@ -16,6 +16,19 @@ export interface SearchIndex {
 
 const INDEXED_KINDS = new Set<DocKind>(["md", "mdx", "txt"]);
 
+// Turn a free-text query into an FTS5 MATCH expression. Each whitespace token is
+// quoted (so FTS5 operators/special chars in user input can't break the query or
+// inject syntax) and suffixed with `*` for prefix matching — so "Spec buat bang"
+// matches "…bangun…" as the user types, not only on a completed word.
+export function toFtsQuery(q: string): string {
+  return q
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => `"${token.replace(/"/g, '""')}"*`)
+    .join(" ");
+}
+
 // Escape HTML special chars in FTS5 snippet, then restore only <mark>/<mark> tags
 function sanitizeSnippet(raw: string): string {
   return raw
@@ -47,7 +60,8 @@ export function build(files: IndexFile[]): SearchIndex {
 
   return {
     query(q: string): SearchHit[] {
-      if (!q.trim()) return [];
+      const match = toFtsQuery(q);
+      if (!match) return [];
       try {
         const rows = db
           .prepare(
@@ -58,7 +72,7 @@ export function build(files: IndexFile[]): SearchIndex {
              WHERE fts_docs MATCH ?
              ORDER BY rank`,
           )
-          .all(q) as { path: string; title: string; snippet: string; rank: number }[];
+          .all(match) as { path: string; title: string; snippet: string; rank: number }[];
         return rows.map((r) => ({
           path: r.path,
           title: r.title,

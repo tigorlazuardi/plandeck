@@ -33,7 +33,8 @@ test.describe("Plandeck E2E", () => {
     const searchInput = page
       .locator('input[placeholder*="earch"], input[placeholder*="ontent"]')
       .first();
-    await searchInput.fill("searchable");
+    // Partial trailing word — exercises FTS5 prefix matching ("searchab" → "searchable").
+    await searchInput.fill("searchab");
     // Wait for results to appear (debounce + network)
     await page.waitForTimeout(800);
     // notes.txt contains "searchable" — click the result
