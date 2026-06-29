@@ -68,31 +68,38 @@ export function SearchBox() {
         placeholder="Search docs..."
         aria-label="Search"
         style={{
-          padding: "4px 8px",
-          borderRadius: 4,
-          border: "1px solid #ccc",
-          width: 200,
+          padding: "8px 12px",
+          borderRadius: 6,
+          border: "1px solid var(--mantine-color-default-border)",
+          background: "var(--mantine-color-body)",
+          color: "var(--mantine-color-text)",
+          fontSize: 14,
+          width: "min(440px, 42vw)",
         }}
       />
       {open && query.trim() && (
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            top: "calc(100% + 4px)",
             left: 0,
-            right: 0,
-            background: "white",
-            border: "1px solid #ccc",
-            borderRadius: 4,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            width: "min(640px, 92vw)",
+            background: "var(--mantine-color-body)",
+            border: "1px solid var(--mantine-color-default-border)",
+            borderRadius: 8,
+            boxShadow: "var(--mantine-shadow-md)",
             zIndex: 1000,
-            maxHeight: 320,
+            maxHeight: "min(70vh, 540px)",
             overflowY: "auto",
           }}
         >
-          {loading && <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>}
+          {loading && (
+            <div style={{ padding: "12px 16px", color: "var(--mantine-color-dimmed)" }}>
+              Searching…
+            </div>
+          )}
           {!loading && hits.length === 0 && (
-            <div style={{ padding: "8px 12px", color: "#888" }}>
+            <div style={{ padding: "12px 16px", color: "var(--mantine-color-dimmed)" }}>
               No matches for &ldquo;{query}&rdquo;
             </div>
           )}
@@ -109,14 +116,20 @@ export function SearchBox() {
                   textAlign: "left",
                   background: "none",
                   border: "none",
-                  padding: "8px 12px",
+                  color: "var(--mantine-color-text)",
+                  padding: "10px 16px",
                   cursor: "pointer",
-                  borderBottom: "1px solid #eee",
+                  borderBottom: "1px solid var(--mantine-color-default-border)",
                 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{hit.title}</div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{hit.title}</div>
                 <div
-                  style={{ fontSize: 12, color: "#555", marginTop: 2 }}
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    color: "var(--mantine-color-dimmed)",
+                    marginTop: 4,
+                  }}
                   // biome-ignore lint/security/noDangerouslySetInnerHtml: snippet contains safe <mark> tags from FTS5
                   dangerouslySetInnerHTML={{ __html: hit.snippet }}
                 />

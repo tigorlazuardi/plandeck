@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { build } from "../../src/server/search-index.ts";
+import { build, toFtsQuery } from "../../src/server/search-index.ts";
 import type { IndexFile } from "../../src/server/search-index.ts";
 
 function makeFile(overrides: Partial<IndexFile>): IndexFile {
@@ -115,6 +115,51 @@ describe("query - basic search", () => {
     // BM25 from SQLite FTS5: more negative = more relevant; sorted ascending so most relevant first
     // biome-ignore lint/style/noNonNullAssertion: length checked above
     expect(hits[0]!.path).toBe("high.md");
+  });
+});
+
+describe("toFtsQuery", () => {
+  it("quotes each token and appends a prefix star", () => {
+    expect(toFtsQuery("Spec buat bang")).toBe('"Spec"* "buat"* "bang"*');
+  });
+
+  it("escapes embedded double quotes", () => {
+    expect(toFtsQuery('a"b')).toBe('"a""b"*');
+  });
+
+  it("returns empty string for blank input", () => {
+    expect(toFtsQuery("   ")).toBe("");
+  });
+});
+
+describe("query - prefix matching", () => {
+  function idx() {
+    return build([
+      makeFile({
+        path: "prd.md",
+        title: "PRD",
+        prose: "Spec buat bangun dummy frontend SPA",
+        kind: "md",
+      }),
+    ]);
+  }
+
+  it("matches a partial trailing word (search-as-you-type)", () => {
+    expect(idx().query("Spec buat bang").length).toBeGreaterThan(0);
+  });
+
+  it("matches a single partial word", () => {
+    expect(idx().query("bang").length).toBeGreaterThan(0);
+  });
+
+  it("still matches the complete word", () => {
+    expect(idx().query("Spec buat bangun").length).toBeGreaterThan(0);
+  });
+
+  it("does not crash on FTS5 special characters", () => {
+    const i = idx();
+    expect(() => i.query('foo*"(bar) AND')).not.toThrow();
+    expect(() => i.query('"')).not.toThrow();
   });
 });
 
