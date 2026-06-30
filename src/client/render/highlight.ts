@@ -21,15 +21,28 @@ export async function getHighlighter(): Promise<Highlighter> {
       "mdx",
       "python",
       "yaml",
+      "go",
+      "sql",
+      "log",
     ],
   });
   return _highlighter;
 }
 
+// Aliases for languages Shiki has no grammar for. Map them to the closest
+// loaded grammar so fenced blocks still get highlighted instead of silent-plain.
+// logql (Loki) has no Shiki grammar — "log" gives sensible log-line coloring.
+const LANG_ALIASES: Record<string, string> = {
+  logql: "log",
+  promql: "log",
+  logfmt: "log",
+  golang: "go",
+};
+
 export function rehypeShikiOptions(colorScheme: "light" | "dark" | "auto") {
   const theme = colorScheme === "dark" ? "github-dark" : "github-light";
   // onError: silently leave unknown/unloaded languages (e.g. mermaid) as plain pre/code
-  return { theme, onError: () => {} } as const;
+  return { theme, langAlias: LANG_ALIASES, onError: () => {} } as const;
 }
 
 export function getMermaidLangs(): string[] {
