@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import { components } from "../blocks/index.ts";
 import { ErrorCard } from "../shell/ErrorCard.tsx";
 import { Mermaid } from "./Mermaid.tsx";
+import { escapeInlineCode } from "./escapeInlineCode.ts";
 import { getRehypeShikiPlugin } from "./highlight.ts";
 
 interface ParseErrorCardProps {
@@ -91,7 +92,7 @@ export function Mdx({ content, path }: MdxProps) {
     getRehypeShikiPlugin(colorScheme)
       .then((shikiPlugin) => {
         if (cancelled) return;
-        return evaluate(content, {
+        return evaluate(escapeInlineCode(content), {
           remarkPlugins: [remarkGfm],
           rehypePlugins: [shikiPlugin],
           ...(runtime as Parameters<typeof evaluate>[1]),

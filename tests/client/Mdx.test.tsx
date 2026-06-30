@@ -73,6 +73,36 @@ describe("Mdx", () => {
     expect(screen.queryByTestId("parse-error-card")).toBeNull();
   });
 
+  test("renders inline <code> with underscores without a parse error", async () => {
+    // Repro: underscores inside inline <code> previously errored with
+    // "Expected the closing tag `</code>` … after the end of `emphasis`".
+    const content =
+      '<Callout type="warning" title="x">\n' +
+      "Query <code>bond_orders-*</code> with <code>product_id</code> and <code>created_at</code>.\n" +
+      "</Callout>";
+
+    await act(async () => {
+      render(
+        <Wrapper>
+          <Mdx content={content} />
+        </Wrapper>,
+      );
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.queryByTestId("mdx-loading")).toBeNull();
+      },
+      { timeout: 10000 },
+    );
+
+    // No parse error, and the literal underscore text is rendered.
+    expect(screen.queryByTestId("parse-error-card")).toBeNull();
+    expect(
+      screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "product_id"),
+    ).toBeTruthy();
+  });
+
   test("parse-error case: shows error card, does not throw", async () => {
     // Deliberately broken MDX — unclosed JSX tag
     const brokenMdx = "<div unclosed";
