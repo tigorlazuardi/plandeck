@@ -1,4 +1,4 @@
-import { useMantineColorScheme } from "@mantine/core";
+import { TypographyStylesProvider, useMantineColorScheme } from "@mantine/core";
 import { evaluate } from "@mdx-js/mdx";
 import { MDXProvider, useMDXComponents } from "@mdx-js/react";
 import { AlertCircle } from "lucide-react";
@@ -150,9 +150,11 @@ export function Mdx({ content, path }: MdxProps) {
 
   return (
     <MdxErrorBoundary {...pathProp}>
-      <MDXProvider components={mdxComponents}>
-        <MdxComponent />
-      </MDXProvider>
+      <TypographyStylesProvider>
+        <MDXProvider components={mdxComponents}>
+          <MdxComponent />
+        </MDXProvider>
+      </TypographyStylesProvider>
     </MdxErrorBoundary>
   );
 }
