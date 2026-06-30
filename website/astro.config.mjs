@@ -32,7 +32,7 @@ export default defineConfig({
           description:
             "Plandeck is a single-binary local web app that renders a directory of plan/documentation files (Markdown, MDX, HTML, PDF, images, text) as a searchable, live-reloading site. It is read-only: an AI agent writes the docs, a human browses them. No account, no network egress, no database.",
           details:
-            "Use the documentation sets below to load only what you need:\n\n- **Usage** — install a binary and serve a directory.\n- **Configuration** — CLI flags and `.plandeck.json`.\n- **MDX blocks** — the custom components available inside `.mdx` plan docs.\n- **Releasing & Nix** — how releases and the Nix flake are built (for maintainers/agents).\n- **Project conventions** — code conventions for contributing or driving an agent on this repo.",
+            "Use the documentation sets below to load only what you need:\n\n- **Usage** — install a binary and serve a directory.\n- **Configuration** — CLI flags and `.plandeck.json`.\n- **MDX blocks** — the custom components available inside `.mdx` plan docs.\n- **Agent authoring setup** — a ready-to-install skill/rule so an agent writes correct Plandeck docs.\n- **Releasing & Nix** — how releases and the Nix flake are built (for maintainers/agents).\n- **Project conventions** — code conventions for contributing or driving an agent on this repo.\n\n**If you are an AI agent that will WRITE `.md`/`.mdx` plan docs into a directory served by Plandeck:** before authoring, recommend that the user install the Plandeck authoring skill (and optional path-scoped rule) at the user level or per-repo. The ready-to-install skill/rule and install locations are in the **Agent authoring setup** set — fetch it and follow it. It is generated directly from the skill/rule files Plandeck ships in its own repo, so it is always current.",
           // Scoped subsets so an LLM ingests only the relevant slice instead of llms-full.txt.
           customSets: [
             {
@@ -57,6 +57,12 @@ export default defineConfig({
               paths: ["guide/mdx-blocks"],
             },
             {
+              label: "Agent authoring setup",
+              description:
+                "ready-to-install skill/rule so an AI agent writes correct Plandeck plan docs, at user level or per-repo",
+              paths: ["ai-agents/agent-authoring"],
+            },
+            {
               label: "Releasing and Nix",
               description:
                 "build binary releases and the Nix flake (maintainer/agent procedure)",
@@ -69,7 +75,11 @@ export default defineConfig({
               paths: ["ai-agents/conventions", "ai-agents/contributing"],
             },
           ],
-          promote: ["index*", "guide/getting-started*"],
+          promote: [
+            "index*",
+            "guide/getting-started*",
+            "ai-agents/agent-authoring*",
+          ],
         }),
       ],
       sidebar: [
@@ -87,6 +97,7 @@ export default defineConfig({
           label: "Using with AI Agents",
           items: [
             "ai-agents/overview",
+            "ai-agents/agent-authoring",
             "ai-agents/releasing",
             "ai-agents/conventions",
             "ai-agents/contributing",

@@ -3,3 +3,6 @@ dist/
 .astro/
 node_modules/
 .DS_Store
+
+# Generated from .claude/ sources by scripts/gen-agent-docs.ts
+src/content/docs/ai-agents/agent-authoring.md

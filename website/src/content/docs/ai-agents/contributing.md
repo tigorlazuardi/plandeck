@@ -43,7 +43,9 @@ local-only; CI does not run it.
 | `scripts/` | `gen-embedded.ts`, `compile.ts` (binary build) |
 | `website/` | This documentation site (Astro + Starlight) |
 | `.claude/rules/` | Path-scoped conventions (see [Project conventions](/plandeck/ai-agents/conventions/)) |
-| `.claude/skills/` | Agent skills, e.g. `releasing-plandeck` |
+| `.claude/skills/` | Agent skills, e.g. `releasing-plandeck`, `plandeck-authoring` |
+| `.agents/` | Symlink → `.claude/`, so harness-agnostic agents discover the same skills/rules |
+| `website/scripts/gen-agent-docs.ts` | Generates the [Recommended agent setup](/plandeck/ai-agents/agent-authoring/) page from the `plandeck-authoring` skill/rule (runs on `prebuild`) |
 
 ## CI
 
