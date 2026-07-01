@@ -27,8 +27,10 @@ describe("Mermaid", () => {
       </Wrapper>,
     );
     // container div always renders immediately
-    const div = container.querySelector("[data-testid='mermaid-container']");
+    const div = container.querySelector("[data-testid='mermaid-container']") as HTMLElement | null;
     expect(div).not.toBeNull();
+    expect(div?.style.display).toBe("flex");
+    expect(div?.style.justifyContent).toBe("center");
   });
 
   test("bad diagram shows error notice", async () => {

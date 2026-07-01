@@ -50,5 +50,11 @@ export function Mermaid({ code }: MermaidProps) {
     );
   }
 
-  return <div data-testid="mermaid-container" ref={containerRef} />;
+  return (
+    <div
+      data-testid="mermaid-container"
+      ref={containerRef}
+      style={{ display: "flex", justifyContent: "center" }}
+    />
+  );
 }
