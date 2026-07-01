@@ -44,6 +44,13 @@ for (const theme of THEMES) {
     });
   });
 
+  test(`mdx table (${theme})`, async ({ page }) => {
+    await shoot(page, "mdx-table", theme, async (p) => {
+      await p.goto("/doc/table.mdx");
+      await expect(p.locator("table").first()).toBeVisible({ timeout: 10000 });
+    });
+  });
+
   test(`html viewer — scripts off (${theme})`, async ({ page }) => {
     await shoot(page, "html-scripts-off", theme, async (p) => {
       await p.goto("/doc/preview.html");

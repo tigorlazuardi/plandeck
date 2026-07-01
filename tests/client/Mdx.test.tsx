@@ -103,6 +103,29 @@ describe("Mdx", () => {
     ).toBeTruthy();
   });
 
+  test("renders a GFM table and wraps it in TypographyStylesProvider", async () => {
+    const tableMdx = ["| Col A | Col B |", "| ----- | ----- |", "| foo   | bar   |"].join("\n");
+
+    await act(async () => {
+      render(
+        <Wrapper>
+          <Mdx content={tableMdx} />
+        </Wrapper>,
+      );
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.queryByTestId("mdx-loading")).toBeNull();
+      },
+      { timeout: 10000 },
+    );
+
+    expect(screen.queryByTestId("parse-error-card")).toBeNull();
+    // A real <table> element must be present — confirms remarkGfm + TypographyStylesProvider path.
+    expect(screen.getByRole("table")).toBeTruthy();
+  });
+
   test("parse-error case: shows error card, does not throw", async () => {
     // Deliberately broken MDX — unclosed JSX tag
     const brokenMdx = "<div unclosed";

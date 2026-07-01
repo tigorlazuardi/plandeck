@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   use: {
-    baseURL: "http://localhost:4321",
+    baseURL: process.env.PLANDECK_BASE_URL ?? "http://localhost:4321",
     viewport: { width: 1440, height: 900 },
     ...devices["Desktop Chrome"],
   },

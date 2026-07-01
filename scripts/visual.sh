@@ -45,7 +45,19 @@ rm -rf "$SHOT_DIR"
 mkdir -p "$SHOT_DIR"
 
 echo "Capturing screenshots via podman Playwright..."
+# podman on macOS runs in a VM: the container can't reach the host via
+# localhost/--network host. Route it to the host through the podman
+# host-gateway alias instead. Linux keeps localhost + --network host.
+PODMAN_HOST_ARGS=()
+BASE_URL="http://localhost:$PORT"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  PODMAN_HOST_ARGS=(--add-host=host.containers.internal:host-gateway)
+  BASE_URL="http://host.containers.internal:$PORT"
+fi
+
 podman run --rm --network host \
+  ${PODMAN_HOST_ARGS[@]+"${PODMAN_HOST_ARGS[@]}"} \
+  -e PLANDECK_BASE_URL="$BASE_URL" \
   -v "$WORKTREE_ROOT":/work:Z \
   -w /work \
   "$IMAGE" \
