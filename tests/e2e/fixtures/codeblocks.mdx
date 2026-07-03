@@ -1,0 +1,47 @@
+---
+title: Code Block Showcase
+brief: Fixture for code block box, title, and line-number features
+---
+
+# Code Block Showcase
+
+Demonstrates the four code-block feature cases.
+
+## (a) Plain block — box + line numbers from 1
+
+```ts
+const greeting = "hello world";
+console.log(greeting);
+function add(a: number, b: number): number {
+  return a + b;
+}
+```
+
+## (b) Title header + line numbers
+
+```ts title="server.ts"
+import { serve } from "bun";
+
+serve({
+  port: 3000,
+  fetch(req) {
+    return new Response("Hello from server");
+  },
+});
+```
+
+## (c) Line numbers disabled
+
+```ts showLineNumbers=false
+const x = 42;
+const y = x * 2;
+console.log(y);
+```
+
+## (d) Start line offset
+
+```ts startLine=42
+// This block starts at line 42
+const offset = true;
+console.log("line numbers begin at 42", offset);
+```

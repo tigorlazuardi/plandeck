@@ -13,7 +13,7 @@ interface MarkdownProps {
 
 const components: Components = {
   pre({ children, ...rest }) {
-    // Check if child is a code element with language-mermaid class
+    // Mermaid: render as diagram, no code-block wrapper.
     if (
       children &&
       typeof children === "object" &&
@@ -29,6 +29,20 @@ const components: Components = {
           ? children.props.children
           : "";
       return <Mermaid code={code} />;
+    }
+    // Shiki code block: wrap with title bar when data-title is present.
+    // data-* attrs arrive as camelCase in react-markdown (data-title → "data-title" key).
+    const title =
+      typeof (rest as Record<string, unknown>)["data-title"] === "string"
+        ? ((rest as Record<string, unknown>)["data-title"] as string)
+        : undefined;
+    if (title) {
+      return (
+        <div className="shiki-block">
+          <div className="shiki-block-title">{title}</div>
+          <pre {...rest}>{children}</pre>
+        </div>
+      );
     }
     // Pass through all props (including className from shiki) to the pre element
     return <pre {...rest}>{children}</pre>;

@@ -44,6 +44,13 @@ for (const theme of THEMES) {
     });
   });
 
+  test(`codeblocks (${theme})`, async ({ page }) => {
+    await shoot(page, "codeblocks", theme, async (p) => {
+      await p.goto("/doc/codeblocks.mdx");
+      await expect(p.locator("pre.shiki").first()).toBeVisible({ timeout: 10000 });
+    });
+  });
+
   test(`mdx table (${theme})`, async ({ page }) => {
     await shoot(page, "mdx-table", theme, async (p) => {
       await p.goto("/doc/table.mdx");

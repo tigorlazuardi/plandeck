@@ -1,0 +1,151 @@
+/* Code block styling: box, title header, line numbers. */
+/* Works with both .md (react-markdown) and .mdx (evaluate) render paths. */
+
+/* ─── Box ─────────────────────────────────────────────────────────────────── */
+
+pre.shiki {
+  /* Override Shiki's inline background-color (set via transformer in highlight.ts). */
+  background-color: #f6f8fa !important;
+  border: 1px solid #d0d7de;
+  border-radius: 0 0 6px 6px; /* top corners handled by title bar when present */
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 0.85em;
+  line-height: 1.1;
+  margin: 0; /* container provides spacing */
+}
+
+/* When there is no title bar, restore full border-radius. */
+pre.shiki:not([data-title]) {
+  border-radius: 6px;
+}
+
+[data-mantine-color-scheme="dark"] pre.shiki {
+  background-color: #0d1117 !important;
+  border-color: #30363d;
+}
+
+/* ─── Code block wrapper + title bar ──────────────────────────────────────── */
+
+.shiki-block {
+  margin: 1em 0;
+  border-radius: 6px;
+  overflow: hidden; /* clip title bar corners */
+}
+
+.shiki-block-title {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 0.78em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  background-color: #eaecef;
+  border: 1px solid #d0d7de;
+  border-bottom: 1px solid #d0d7de;
+  border-radius: 6px 6px 0 0;
+  color: #57606a;
+  user-select: none;
+}
+
+[data-mantine-color-scheme="dark"] .shiki-block-title {
+  background-color: #161b22;
+  border-color: #30363d;
+  color: #8b949e;
+}
+
+/* pre inside a titled block loses its own top border (shared with title bar's bottom). */
+.shiki-block pre.shiki {
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+/* ─── Line numbers (CSS counter approach) ──────────────────────────────────── */
+
+/*
+  Line numbers are ON by default (data-line-numbers="true").
+  The CSS variable --shiki-start (set on the <pre> by the transformer)
+  drives the counter offset. Default start = 1, so --shiki-start defaults to 1.
+*/
+
+pre.shiki[data-line-numbers="true"] {
+  padding-left: 0; /* gutter owns left padding */
+}
+
+pre.shiki[data-line-numbers="true"] code {
+  counter-reset: shiki-line calc(var(--shiki-start, 1) - 1);
+  display: block;
+}
+
+pre.shiki[data-line-numbers="true"] .line {
+  counter-increment: shiki-line;
+  display: block;
+  width: 100%;
+  line-height: inherit; /* inherit pre's 1.2 so 1lh resolves to ~16px, not Mantine's ~21px */
+  min-height: 1lh; /* keep blank lines from collapsing so numbers stay 1:1 aligned */
+  padding-left: 3.5em; /* room for the gutter */
+  box-sizing: border-box;
+  position: relative;
+}
+
+pre.shiki[data-line-numbers="true"] .line::before {
+  content: counter(shiki-line);
+  position: absolute;
+  left: 0;
+  width: 3em;
+  padding-right: 0.75em;
+  text-align: right;
+  color: #9ea8b0;
+  user-select: none;
+  pointer-events: none;
+  border-right: 1px solid #d0d7de;
+  margin-right: 0.5em;
+}
+
+[data-mantine-color-scheme="dark"] pre.shiki[data-line-numbers="true"] .line::before {
+  color: #484f58;
+  border-right-color: #30363d;
+}
+
+/* ─── Neutralise Mantine TypographyStylesProvider overrides inside shiki ─── */
+/*
+  Mantine sets background-color on :where(code) and color on :where(pre).
+  Those rules use a class-selector (.m_d6493fad), so we need at least the same
+  specificity to override. pre.shiki is (0,1,1) which beats Mantine's (0,1,0).
+  We zero out any background that Mantine (or a third party) might inject on
+  the <code> wrapper and on token/line <span> elements inside a shiki block.
+*/
+pre.shiki code {
+  background-color: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  line-height: inherit; /* prevent Mantine :where(code) from inflating line-height */
+}
+
+pre.shiki .line,
+pre.shiki span {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ─── Print: keep light theme ────────────────────────────────────────────── */
+
+@media print {
+  pre.shiki {
+    background-color: #f6f8fa !important;
+    border-color: #d0d7de !important;
+  }
+
+  .shiki-block-title {
+    background-color: #eaecef !important;
+    border-color: #d0d7de !important;
+    color: #57606a !important;
+  }
+
+  pre.shiki[data-line-numbers="true"] .line::before {
+    color: #9ea8b0 !important;
+    border-right-color: #d0d7de !important;
+  }
+}

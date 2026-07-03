@@ -127,7 +127,8 @@ export function Mdx({ content, path }: MdxProps) {
   const mdxComponents = {
     ...components,
     pre(props: React.ComponentPropsWithoutRef<"pre">) {
-      const { children } = props;
+      const { children, ...rest } = props;
+      // Mermaid: render as diagram, no code-block wrapper.
       if (
         children &&
         typeof children === "object" &&
@@ -144,7 +145,20 @@ export function Mdx({ content, path }: MdxProps) {
             : "";
         return <Mermaid code={code} />;
       }
-      return <pre {...props} />;
+      // Shiki code block: wrap with title bar when data-title is present.
+      const title =
+        typeof rest["data-title" as keyof typeof rest] === "string"
+          ? (rest["data-title" as keyof typeof rest] as string)
+          : undefined;
+      if (title) {
+        return (
+          <div className="shiki-block">
+            <div className="shiki-block-title">{title}</div>
+            <pre {...rest}>{children}</pre>
+          </div>
+        );
+      }
+      return <pre {...rest}>{children}</pre>;
     },
   };
 
