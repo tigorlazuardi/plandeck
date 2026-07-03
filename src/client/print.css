@@ -3,6 +3,11 @@
   .mantine-AppShell-header,
   .mantine-AppShell-navbar,
   .vp-no-print,
+  .mantine-Menu-dropdown,
+  .mantine-Popover-dropdown,
+  .mantine-Tooltip-tooltip,
+  .mantine-Modal-root,
+  .mantine-Overlay-root,
   [data-testid="disconnect-banner"] {
     display: none !important;
   }

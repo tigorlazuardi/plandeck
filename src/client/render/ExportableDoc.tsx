@@ -22,7 +22,7 @@ export function ExportableDoc({ title, children }: ExportableDocProps) {
               Export
             </Button>
           </Menu.Target>
-          <Menu.Dropdown>
+          <Menu.Dropdown className="vp-no-print">
             <Menu.Item
               leftSection={<Download size={14} />}
               onClick={() => {
