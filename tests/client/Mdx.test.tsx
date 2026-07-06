@@ -126,6 +126,32 @@ describe("Mdx", () => {
     expect(screen.getByRole("table")).toBeTruthy();
   });
 
+  test("hides HTML/markdown comments instead of erroring", async () => {
+    const content = "# Doc\n\n<!-- secret note -->\n\nVisible body.";
+
+    await act(async () => {
+      render(
+        <Wrapper>
+          <Mdx content={content} />
+        </Wrapper>,
+      );
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.queryByTestId("mdx-loading")).toBeNull();
+      },
+      { timeout: 10000 },
+    );
+
+    // MDX used to error on `<!--`; now the comment is stripped and hidden.
+    expect(screen.queryByTestId("parse-error-card")).toBeNull();
+    expect(screen.queryByText(/secret note/)).toBeNull();
+    expect(
+      screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "Visible body."),
+    ).toBeTruthy();
+  });
+
   test("parse-error case: shows error card, does not throw", async () => {
     // Deliberately broken MDX — unclosed JSX tag
     const brokenMdx = "<div unclosed";
