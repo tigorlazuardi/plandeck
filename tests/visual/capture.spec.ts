@@ -80,4 +80,22 @@ for (const theme of THEMES) {
       await expect(p.getByRole("switch")).toBeChecked({ timeout: 5000 });
     });
   });
+
+  test(`trace file (${theme})`, async ({ page }) => {
+    await shoot(page, "trace-file", theme, async (p) => {
+      await p.goto("/doc/checkout.trace.json");
+      await expect(p.locator('[data-testid="service-legend"]')).toBeVisible({
+        timeout: 10000,
+      });
+    });
+  });
+
+  test(`trace block (${theme})`, async ({ page }) => {
+    await shoot(page, "trace-block", theme, async (p) => {
+      await p.goto("/doc/trace-demo.mdx");
+      await expect(p.locator('[data-testid="service-legend"]')).toBeVisible({
+        timeout: 10000,
+      });
+    });
+  });
 }

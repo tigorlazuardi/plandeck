@@ -181,6 +181,30 @@ describe("TraceWaterfall block", () => {
     expect(screen.getByTestId("span-row-root")).toBeTruthy();
   });
 
+  test("reconstructs source from a shiki-tokenized span tree", () => {
+    // Regression: the real MDX pipeline runs rehype-shiki over the block's
+    // fenced child, so the code content arrives as nested <span> tokens, not a
+    // plain string. The block must collect text leaves recursively. Simulate by
+    // shattering the JSON across per-line + per-token spans.
+    const source = JSON.stringify(validOtlpPayload());
+    const mid = Math.floor(source.length / 2);
+    render(
+      <TraceWaterfall>
+        <pre className="shiki">
+          <code>
+            <span>
+              <span>{source.slice(0, mid)}</span>
+              <span>{source.slice(mid)}</span>
+            </span>
+          </code>
+        </pre>
+      </TraceWaterfall>,
+      { wrapper: MantineWrapper },
+    );
+    expect(screen.getByTestId("service-legend")).toBeTruthy();
+    expect(screen.getByTestId("span-row-root")).toBeTruthy();
+  });
+
   test("invalid json fenced child renders the renderer's error card", () => {
     render(
       <TraceWaterfall>

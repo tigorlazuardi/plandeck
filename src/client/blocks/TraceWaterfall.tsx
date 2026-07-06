@@ -5,28 +5,23 @@ interface TraceWaterfallBlockProps {
   children?: React.ReactNode;
 }
 
-function extractSource(children: React.ReactNode): string {
-  // Children from MDX: <pre><code>json string</code></pre>
-  const child = React.Children.toArray(children)[0];
-  if (!React.isValidElement(child)) return "";
-
-  // pre element
-  const pre = child as React.ReactElement<{ children?: React.ReactNode }>;
-  const preChildren = React.Children.toArray(pre.props.children);
-  const codeEl = preChildren[0];
-
-  if (!React.isValidElement(codeEl)) {
-    // maybe children is directly the string
-    return String(pre.props.children ?? "");
+// The fenced-code child arrives AFTER rehype-shiki has run over the whole MDX
+// tree (Mdx.tsx applies it globally), so the code content is a tree of
+// highlighted <span> tokens — NOT a plain string. Recursively collect every text
+// leaf in DFS order to reconstruct the original source text exactly. Also handles
+// the plain <pre><code>string</code></pre> subtree (unit tests, non-shiki paths).
+function collectText(node: React.ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(collectText).join("");
+  if (React.isValidElement(node)) {
+    return collectText((node.props as { children?: React.ReactNode }).children);
   }
-
-  const code = codeEl as React.ReactElement<{ children?: React.ReactNode }>;
-  const content = code.props.children;
-  if (typeof content === "string") return content;
-  return String(content ?? "");
+  return "";
 }
 
 export function TraceWaterfall({ children }: TraceWaterfallBlockProps) {
-  const source = extractSource(children);
+  const source = collectText(children);
   return <TraceWaterfallView source={source} />;
 }

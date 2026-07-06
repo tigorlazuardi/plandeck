@@ -35,6 +35,7 @@ function colorForService(service: string): string {
 }
 
 function formatMs(ms: number): string {
+  if (ms <= 0) return "0ms";
   if (ms < 1) return `${Math.round(ms * 1000)}μs`;
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
