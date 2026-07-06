@@ -1,4 +1,4 @@
-import { Badge, Drawer, Group, Paper, ScrollArea, Stack, Table, Text, Title } from "@mantine/core";
+import { Badge, Drawer, Group, Paper, ScrollArea, Stack, Table, Text } from "@mantine/core";
 import { useMemo, useState } from "react";
 import { ErrorCard } from "../shell/ErrorCard.tsx";
 import { type ParsedTraceGroup, type TraceSpan, parseOtlp } from "./parseOtlp.ts";
@@ -348,7 +348,7 @@ export function TraceWaterfall({ source }: TraceWaterfallProps) {
         onClose={() => setSelectedSpan(null)}
         position="right"
         size="md"
-        title={<Title order={4}>Span detail</Title>}
+        title="Span detail"
         data-testid="span-detail-drawer"
       >
         {selectedSpan && <SpanDetailPanel span={selectedSpan} />}
