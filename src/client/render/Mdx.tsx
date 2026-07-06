@@ -11,6 +11,7 @@ import { ErrorCard } from "../shell/ErrorCard.tsx";
 import { Mermaid } from "./Mermaid.tsx";
 import { escapeInlineCode } from "./escapeInlineCode.ts";
 import { getRehypeShikiPlugin } from "./highlight.ts";
+import { stripHtmlComments } from "./stripHtmlComments.ts";
 
 interface ParseErrorCardProps {
   error: Error;
@@ -92,7 +93,7 @@ export function Mdx({ content, path }: MdxProps) {
     getRehypeShikiPlugin(colorScheme)
       .then((shikiPlugin) => {
         if (cancelled) return;
-        return evaluate(escapeInlineCode(content), {
+        return evaluate(escapeInlineCode(stripHtmlComments(content)), {
           remarkPlugins: [remarkGfm],
           rehypePlugins: [shikiPlugin],
           ...(runtime as Parameters<typeof evaluate>[1]),
