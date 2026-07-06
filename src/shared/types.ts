@@ -1,5 +1,5 @@
 // src/shared/types.ts
-export type DocKind = "mdx" | "md" | "txt" | "html" | "pdf" | "image";
+export type DocKind = "mdx" | "md" | "txt" | "html" | "pdf" | "image" | "trace";
 
 export interface TreeNode {
   name: string; // basename

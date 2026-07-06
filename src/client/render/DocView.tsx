@@ -9,6 +9,7 @@ import { Markdown } from "./Markdown.tsx";
 import { Mdx } from "./Mdx.tsx";
 import { PdfView } from "./PdfView.tsx";
 import { PlainText } from "./PlainText.tsx";
+import { TraceWaterfall } from "./TraceWaterfall.tsx";
 
 interface DocViewProps {
   path: string;
@@ -103,6 +104,14 @@ export function DocView({ path }: DocViewProps) {
 
   if (kind === "image") {
     return <ImageView path={path} />;
+  }
+
+  if (kind === "trace") {
+    return (
+      <ExportableDoc title={title}>
+        <TraceWaterfall source={content ?? ""} />
+      </ExportableDoc>
+    );
   }
 
   return <ErrorCard icon={<FileX size={16} />} title={`Unsupported file type: ${kind}`} />;

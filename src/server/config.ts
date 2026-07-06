@@ -42,7 +42,7 @@ const BUILTIN_DEFAULTS = {
   open: false,
   include: [] as string[],
   exclude: [] as string[],
-  textFiles: [".md", ".mdx", ".txt"],
+  textFiles: [".md", ".mdx", ".txt", ".trace.json"],
   nonTextFiles: [".html", ".htm", ".pdf", ".jpg", ".jpeg", ".png"],
   maxFileBytes: 5 * 1024 * 1024,
 } as const;
