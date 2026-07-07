@@ -41,4 +41,12 @@
     color: inherit;
     text-decoration: underline;
   }
+
+  /* Trace waterfall scrolls on screen (mah=70vh); print must show the full
+     trace, so drop the height cap and let the viewport overflow visibly. */
+  .vp-trace-scroll,
+  .vp-trace-scroll .mantine-ScrollArea-viewport {
+    max-height: none !important;
+    overflow: visible !important;
+  }
 }

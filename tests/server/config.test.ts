@@ -23,7 +23,7 @@ describe("resolveConfig - defaults", () => {
     expect(cfg.open).toBe(false);
     expect(cfg.include).toEqual([]);
     expect(cfg.exclude).toEqual([]);
-    expect(cfg.textFiles).toEqual([".md", ".mdx", ".txt"]);
+    expect(cfg.textFiles).toEqual([".md", ".mdx", ".txt", ".trace.json"]);
     expect(cfg.nonTextFiles).toEqual([".html", ".htm", ".pdf", ".jpg", ".jpeg", ".png"]);
     expect(cfg.maxFileBytes).toBe(5 * 1024 * 1024);
   });

@@ -1,10 +1,46 @@
 import { describe, expect, test } from "bun:test";
+import { MantineProvider } from "@mantine/core";
 import { fireEvent, render, screen } from "@testing-library/react";
-import React from "react";
+import type React from "react";
 import { Callout } from "../../src/client/blocks/Callout.tsx";
 import { CodeTabs } from "../../src/client/blocks/CodeTabs.tsx";
 import { Decision } from "../../src/client/blocks/Decision.tsx";
 import { HtmlBlock } from "../../src/client/blocks/HtmlBlock.tsx";
+import { TraceWaterfall } from "../../src/client/blocks/TraceWaterfall.tsx";
+
+function MantineWrapper({ children }: { children: React.ReactNode }) {
+  return <MantineProvider>{children}</MantineProvider>;
+}
+
+function strAttr(key: string, value: string) {
+  return { key, value: { stringValue: value } };
+}
+
+function validOtlpPayload() {
+  return {
+    resourceSpans: [
+      {
+        resource: { attributes: [strAttr("service.name", "frontend")] },
+        scopeSpans: [
+          {
+            spans: [
+              {
+                traceId: "t1",
+                spanId: "root",
+                name: "GET /checkout",
+                startTimeUnixNano: "1000000000",
+                endTimeUnixNano: "1210000000",
+                status: { code: 0 },
+                attributes: [],
+                events: [],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
 
 describe("Callout", () => {
   test("renders children", () => {
@@ -127,6 +163,58 @@ describe("HtmlBlock", () => {
     );
     const iframe = container.querySelector("iframe") as HTMLIFrameElement;
     expect(iframe.style.height).toBe("300px");
+  });
+});
+
+describe("TraceWaterfall block", () => {
+  test("valid OTLP json fenced child renders the waterfall", () => {
+    const source = JSON.stringify(validOtlpPayload());
+    render(
+      <TraceWaterfall>
+        <pre>
+          <code className="language-json">{source}</code>
+        </pre>
+      </TraceWaterfall>,
+      { wrapper: MantineWrapper },
+    );
+    expect(screen.getByTestId("service-legend")).toBeTruthy();
+    expect(screen.getByTestId("span-row-root")).toBeTruthy();
+  });
+
+  test("reconstructs source from a shiki-tokenized span tree", () => {
+    // Regression: the real MDX pipeline runs rehype-shiki over the block's
+    // fenced child, so the code content arrives as nested <span> tokens, not a
+    // plain string. The block must collect text leaves recursively. Simulate by
+    // shattering the JSON across per-line + per-token spans.
+    const source = JSON.stringify(validOtlpPayload());
+    const mid = Math.floor(source.length / 2);
+    render(
+      <TraceWaterfall>
+        <pre className="shiki">
+          <code>
+            <span>
+              <span>{source.slice(0, mid)}</span>
+              <span>{source.slice(mid)}</span>
+            </span>
+          </code>
+        </pre>
+      </TraceWaterfall>,
+      { wrapper: MantineWrapper },
+    );
+    expect(screen.getByTestId("service-legend")).toBeTruthy();
+    expect(screen.getByTestId("span-row-root")).toBeTruthy();
+  });
+
+  test("invalid json fenced child renders the renderer's error card", () => {
+    render(
+      <TraceWaterfall>
+        <pre>
+          <code className="language-json">{"not valid json {{{"}</code>
+        </pre>
+      </TraceWaterfall>,
+      { wrapper: MantineWrapper },
+    );
+    expect(screen.getByText("Invalid trace")).toBeTruthy();
   });
 });
 

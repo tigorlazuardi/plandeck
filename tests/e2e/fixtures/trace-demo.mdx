@@ -1,0 +1,56 @@
+# Trace waterfall demo
+
+A small OTLP trace rendered inline through the real MDX pipeline, showing a root
+request handled by `web` fanning out to a `postgres` query.
+
+<TraceWaterfall>
+```json
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [{ "key": "service.name", "value": { "stringValue": "web" } }]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "traceId": "5c1d9a2f4e6b3c8d7a1f0e2b4c6d8e0f",
+              "spanId": "1a2b3c4d5e6f7081",
+              "name": "GET /home",
+              "startTimeUnixNano": "1700000100000000000",
+              "endTimeUnixNano": "1700000100150000000",
+              "status": { "code": 1, "message": "OK" },
+              "attributes": [{ "key": "http.method", "value": { "stringValue": "GET" } }],
+              "events": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [{ "key": "service.name", "value": { "stringValue": "postgres" } }]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "traceId": "5c1d9a2f4e6b3c8d7a1f0e2b4c6d8e0f",
+              "spanId": "2b3c4d5e6f708192",
+              "parentSpanId": "1a2b3c4d5e6f7081",
+              "name": "db.query",
+              "startTimeUnixNano": "1700000100020000000",
+              "endTimeUnixNano": "1700000100110000000",
+              "status": { "code": 1, "message": "OK" },
+              "attributes": [{ "key": "db.statement", "value": { "stringValue": "SELECT * FROM users WHERE id = $1" } }],
+              "events": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+</TraceWaterfall>
